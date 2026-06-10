@@ -1,1 +1,3360 @@
-<!doctype html><meta charset="utf-8"><title>incline-trust</title><p>Prototype source pending. Live case study: <a href="https://siarheimardovich.com/incline-trust/">siarheimardovich.com/incline-trust/</a></p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InclineTrust, Exception Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,300;8..144,400;8..144,500;8..144,600;8..144,700&family=Roboto+Mono:wght@400;500;600&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0,0" />
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+/* ==========================================================================
+   MATERIAL DESIGN 3 DARK, TEAL SCHEME
+   ========================================================================== */
+:root {
+  color-scheme: dark;
+
+  /* Tonal neutrals */
+  --md-sys-surface:                 #101417;
+  --md-sys-surface-dim:             #101417;
+  --md-sys-surface-bright:          #363A3D;
+  --md-sys-surface-container-lowest: #0B0F11;
+  --md-sys-surface-container-low:   #181C1F;
+  --md-sys-surface-container:       #1C2023;
+  --md-sys-surface-container-high:  #262A2D;
+  --md-sys-surface-container-highest: #303437;
+  --md-sys-on-surface:              #E1E3E5;
+  --md-sys-on-surface-variant:      #C1C7C9;
+  --md-sys-outline:                 #8B9194;
+  --md-sys-outline-variant:         #41474A;
+  --md-sys-scrim:                   #000000;
+
+  /* Primary (teal) */
+  --md-sys-primary:                 #5DD5FC;
+  --md-sys-on-primary:              #003544;
+  --md-sys-primary-container:       #004D61;
+  --md-sys-on-primary-container:    #B8EBFF;
+
+  /* Secondary */
+  --md-sys-secondary:               #B1CBD8;
+  --md-sys-on-secondary:            #1C343F;
+  --md-sys-secondary-container:     #334B56;
+  --md-sys-on-secondary-container:  #CDE7F5;
+
+  /* Tertiary */
+  --md-sys-tertiary:                #C4C3EB;
+  --md-sys-on-tertiary:             #2D2D4E;
+  --md-sys-tertiary-container:      #444466;
+  --md-sys-on-tertiary-container:   #E2DFFF;
+
+  /* Error */
+  --md-sys-error:                   #FFB4AB;
+  --md-sys-on-error:                #690005;
+  --md-sys-error-container:         #93000A;
+  --md-sys-on-error-container:      #FFDAD6;
+
+  /* Custom semantic, M3 tuned */
+  --md-sys-success:                 #8FD8A0;
+  --md-sys-on-success:              #003915;
+  --md-sys-success-container:       #005321;
+  --md-sys-warning:                 #F7D17E;
+  --md-sys-on-warning:              #3F2E00;
+  --md-sys-warning-container:       #5A4400;
+
+  /* Shape */
+  --md-shape-xs: 4px;
+  --md-shape-sm: 8px;
+  --md-shape-md: 12px;
+  --md-shape-lg: 16px;
+  --md-shape-xl: 28px;
+  --md-shape-full: 9999px;
+
+  /* Typographic scale, 1.250 major third, 16px base */
+  --fs-0: 0.8125rem;   /* 13px, captions, meta */
+  --fs-1: 0.875rem;    /* 14px, body and controls */
+  --fs-2: 1rem;        /* 16px, card headings */
+  --fs-3: 1.25rem;     /* 20px, brand */
+  --fs-4: 1.5625rem;   /* 25px, section title */
+  --fs-5: 1.9531rem;   /* 31px, amount value */
+  --fs-6: 2.4414rem;   /* 39px, timeline and chart labels at hero size */
+  --fs-7: 3.0518rem;   /* 49px, trust score hero */
+
+  /* Spacing rhythm, 8px base */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 40px;
+
+  /* Elevation */
+  --md-elev-0: none;
+  --md-elev-1: 0 1px 2px rgba(0,0,0,0.30), 0 1px 3px 1px rgba(0,0,0,0.15);
+  --md-elev-2: 0 1px 2px rgba(0,0,0,0.30), 0 2px 6px 2px rgba(0,0,0,0.15);
+  --md-elev-3: 0 1px 3px rgba(0,0,0,0.30), 0 4px 8px 3px rgba(0,0,0,0.15);
+  --md-elev-4: 0 2px 3px rgba(0,0,0,0.30), 0 6px 10px 4px rgba(0,0,0,0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { min-height: 100%; }
+
+body {
+  font-family: "Roboto Flex", "Roboto", -apple-system, "Segoe UI", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-size: var(--fs-1);
+  background: var(--md-sys-surface);
+  color: var(--md-sys-on-surface);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button, select, input, textarea {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+}
+
+button { cursor: pointer; }
+
+:focus-visible {
+  outline: 2px solid var(--md-sys-primary);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* ==========================================================================
+   APP SHELL
+   ========================================================================== */
+.app {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  min-height: 100vh;
+}
+
+/* Top app bar, medium */
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 64px;
+  padding: 0 24px;
+  background: var(--md-sys-surface-container);
+  border-bottom: 1px solid var(--md-sys-outline-variant);
+}
+
+.app-bar-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.app-bar-title .brand {
+  font-size: var(--fs-3);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--md-sys-on-surface);
+}
+
+.app-bar-title .subtitle {
+  font-size: var(--fs-0);
+  color: var(--md-sys-on-surface-variant);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.app-bar-spacer { flex: 1 1 auto; }
+
+/* Segmented buttons */
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--md-sys-outline);
+  border-radius: var(--md-shape-full);
+  height: 40px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  height: 100%;
+  color: var(--md-sys-on-surface);
+  font-size: 14px;
+  letter-spacing: 0.1px;
+  border-right: 1px solid var(--md-sys-outline);
+  position: relative;
+}
+
+.segment:last-child { border-right: 0; }
+
+.segment:hover {
+  background: color-mix(in srgb, var(--md-sys-on-surface) 8%, transparent);
+}
+
+.segment.selected {
+  background: var(--md-sys-secondary-container);
+  color: var(--md-sys-on-secondary-container);
+}
+
+.segment .material-symbols-outlined { font-size: 18px; }
+
+/* Icon button */
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--md-shape-full);
+  color: var(--md-sys-on-surface-variant);
+  display: grid;
+  place-items: center;
+}
+
+.icon-btn:hover {
+  background: color-mix(in srgb, var(--md-sys-on-surface) 8%, transparent);
+  color: var(--md-sys-on-surface);
+}
+
+/* Avatar */
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--md-shape-full);
+  background: var(--md-sys-primary-container);
+  color: var(--md-sys-on-primary-container);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  background: var(--md-sys-surface);
+  border-bottom: 1px solid var(--md-sys-outline-variant);
+  flex-wrap: wrap;
+  position: sticky;
+  top: 64px;
+  z-index: 30;
+}
+
+/* Filter chip */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px 0 12px;
+  border: 1px solid var(--md-sys-outline);
+  border-radius: var(--md-shape-sm);
+  color: var(--md-sys-on-surface-variant);
+  font-size: 14px;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  background: color-mix(in srgb, var(--md-sys-on-surface) 8%, transparent);
+}
+
+.chip.selected {
+  background: var(--md-sys-secondary-container);
+  color: var(--md-sys-on-secondary-container);
+  border-color: transparent;
+  padding-left: 8px;
+}
+
+.chip.selected .material-symbols-outlined { font-size: 18px; }
+
+.chip .material-symbols-outlined {
+  font-size: 18px;
+  color: inherit;
+}
+
+.chip-dropdown {
+  position: relative;
+}
+
+.chip-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 200px;
+  background: var(--md-sys-surface-container-high);
+  border: 1px solid var(--md-sys-outline-variant);
+  border-radius: var(--md-shape-xs);
+  box-shadow: var(--md-elev-2);
+  padding: 8px 0;
+  display: none;
+  z-index: 50;
+}
+
+.chip-menu.open { display: block; }
+
+.chip-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  padding: 0 16px;
+  height: 48px;
+  font-size: 14px;
+  color: var(--md-sys-on-surface);
+  text-align: left;
+}
+
+.chip-menu-item:hover {
+  background: color-mix(in srgb, var(--md-sys-on-surface) 8%, transparent);
+}
+
+.chip-menu-item.active { color: var(--md-sys-primary); }
+
+.filter-summary {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--md-sys-on-surface-variant);
+  letter-spacing: 0.4px;
+}
+
+/* ==========================================================================
+   MAIN LAYOUT
+   ========================================================================== */
+.content {
+  padding: var(--sp-5) var(--sp-6) var(--sp-7);
+  display: grid;
+  gap: var(--sp-5);
+  max-width: 1680px;
+  margin: 0 auto;
+  width: 100%;
+  grid-template-columns: minmax(360px, 1fr) minmax(0, 2.2fr);
+  grid-template-areas:
+    "inbox  case"
+    "evidence evidence"
+    "decision artifact"
+    "activity activity";
+}
+
+@media (max-width: 1200px) {
+  .content {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "inbox"
+      "case"
+      "evidence"
+      "decision"
+      "artifact"
+      "activity";
+  }
+}
+
+.a-inbox    { grid-area: inbox; }
+.a-case     { grid-area: case; }
+.a-evidence { grid-area: evidence; }
+.a-decision { grid-area: decision; }
+.a-artifact { grid-area: artifact; }
+.a-activity { grid-area: activity; }
+
+/* ==========================================================================
+   CARDS (M3)
+   ========================================================================== */
+.card {
+  background: var(--md-sys-surface-container-low);
+  border-radius: var(--md-shape-md);
+  padding: 0;
+  overflow: hidden;
+}
+
+.card.elevated {
+  background: var(--md-sys-surface-container-low);
+  box-shadow: var(--md-elev-1);
+}
+
+.card.filled {
+  background: var(--md-sys-surface-container-highest);
+}
+
+.card.outlined {
+  background: var(--md-sys-surface);
+  border: 1px solid var(--md-sys-outline-variant);
+}
+
+.card-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--sp-6) var(--sp-4);
+}
+
+.card-header h2 {
+  font-size: var(--fs-2);
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.card-header .meta {
+  font-size: var(--fs-0);
+  color: var(--md-sys-on-surface-variant);
+  letter-spacing: 0.4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-body {
+  padding: 0 var(--sp-6) var(--sp-5);
+}
+
+/* ==========================================================================
+   INBOX
+   ========================================================================== */
+.inbox-list {
+  max-height: 780px;
+  overflow-y: auto;
+  padding-right: var(--sp-2);
+  margin: 0 var(--sp-5) var(--sp-5) var(--sp-5);
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.inbox-list::-webkit-scrollbar { width: 8px; }
+.inbox-list::-webkit-scrollbar-thumb {
+  background: var(--md-sys-outline-variant);
+  border-radius: var(--md-shape-full);
+}
+
+.inbox-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--sp-4);
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-surface-container);
+  border: 1px solid transparent;
+  color: var(--md-sys-on-surface);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.inbox-item:hover {
+  background: var(--md-sys-surface-container-high);
+}
+
+.inbox-item.selected {
+  background: var(--md-sys-surface-container-high);
+  border-color: var(--md-sys-primary);
+}
+
+.inbox-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.inbox-vendor {
+  font-size: var(--fs-2);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.inbox-amount {
+  font-family: "Roboto Mono", ui-monospace, monospace;
+  font-size: var(--fs-2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.3px;
+}
+
+.inbox-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--md-sys-on-surface-variant);
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  letter-spacing: 0.4px;
+}
+
+.inbox-meta .dot-sep { color: var(--md-sys-outline); }
+
+/* Assist chip (tags) */
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 11px;
+  border: 1px solid var(--md-sys-outline-variant);
+  border-radius: var(--md-shape-sm);
+  color: var(--md-sys-on-surface-variant);
+  letter-spacing: 0.4px;
+}
+
+.inbox-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* Badge, severity */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--md-shape-sm);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.badge.critical { background: var(--md-sys-error-container); color: var(--md-sys-on-error-container); }
+.badge.high     { background: var(--md-sys-warning-container); color: var(--md-sys-warning); }
+.badge.medium   { background: var(--md-sys-tertiary-container); color: var(--md-sys-on-tertiary-container); }
+.badge.low      { background: var(--md-sys-success-container); color: var(--md-sys-success); }
+
+.inbox-bottom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.confidence-track {
+  position: relative;
+  flex: 1 1 auto;
+  height: 8px;
+  background: var(--md-sys-surface-container-highest);
+  border-radius: var(--md-shape-full);
+  overflow: visible;
+}
+
+.confidence-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  border-radius: var(--md-shape-full);
+  background: var(--md-sys-error);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--md-sys-error) 30%, transparent);
+}
+
+.confidence-fill.medium { background: var(--md-sys-warning); box-shadow: 0 0 0 1px color-mix(in srgb, var(--md-sys-warning) 30%, transparent); }
+.confidence-fill.low    { background: var(--md-sys-success); box-shadow: 0 0 0 1px color-mix(in srgb, var(--md-sys-success) 30%, transparent); }
+
+.confidence-band {
+  position: absolute;
+  top: -4px; bottom: -4px;
+  background: color-mix(in srgb, var(--md-sys-on-surface) 8%, transparent);
+  border-left: 1.5px dashed var(--md-sys-outline);
+  border-right: 1.5px dashed var(--md-sys-outline);
+  border-radius: 3px;
+}
+
+.confidence-label {
+  font-family: "Roboto Mono", monospace;
+  font-size: var(--fs-2);
+  font-weight: 600;
+  color: var(--md-sys-on-surface);
+  min-width: 76px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.2px;
+}
+
+.confidence-label .band-ref {
+  color: var(--md-sys-on-surface-variant);
+  font-weight: 400;
+  font-size: var(--fs-0);
+  margin-left: 3px;
+}
+
+/* ==========================================================================
+   CASE DETAIL
+   ========================================================================== */
+.case-top {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  padding: var(--sp-6);
+  border-bottom: 1px solid var(--md-sys-outline-variant);
+}
+
+.case-top .ident .label {
+  font-size: var(--fs-0);
+  color: var(--md-sys-on-surface-variant);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-bottom: var(--sp-1);
+}
+
+.case-top h2 {
+  font-size: var(--fs-4);
+  font-weight: 600;
+  letter-spacing: -0.25px;
+  line-height: 1.2;
+}
+
+.case-top .sub {
+  font-size: var(--fs-1);
+  color: var(--md-sys-on-surface-variant);
+  margin-top: var(--sp-2);
+  letter-spacing: 0.15px;
+}
+
+.case-top .amount {
+  text-align: right;
+}
+
+.case-top .amount-value {
+  font-family: "Roboto Mono", monospace;
+  font-size: var(--fs-5);
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.case-top .amount-delta {
+  font-size: var(--fs-0);
+  color: var(--md-sys-error);
+  margin-top: var(--sp-2);
+  letter-spacing: 0.4px;
+  font-weight: 500;
+}
+
+.case-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-6);
+  padding: var(--sp-6);
+}
+
+@media (max-width: 1280px) {
+  .case-grid { grid-template-columns: 1fr; }
+}
+
+.section-label {
+  font-size: var(--fs-0);
+  color: var(--md-sys-on-surface-variant);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-bottom: var(--sp-3);
+}
+
+.explanation {
+  background: var(--md-sys-surface-container);
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--md-shape-md);
+  font-size: var(--fs-1);
+  line-height: 1.65;
+  color: var(--md-sys-on-surface);
+}
+
+.mention {
+  background: color-mix(in srgb, var(--md-sys-primary) 18%, transparent);
+  padding: 2px 6px;
+  border-radius: var(--md-shape-xs);
+  color: var(--md-sys-primary);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.mention:hover {
+  background: color-mix(in srgb, var(--md-sys-primary) 28%, transparent);
+}
+
+.mention.active {
+  background: var(--md-sys-primary-container);
+  color: var(--md-sys-on-primary-container);
+}
+
+.evidence-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.evidence-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-surface-container);
+}
+
+.evidence-row .head {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-sys-on-surface);
+  margin-bottom: 2px;
+}
+
+.evidence-row .copy {
+  font-size: 12px;
+  color: var(--md-sys-on-surface-variant);
+  line-height: 1.5;
+}
+
+.evidence-row .value {
+  font-family: "Roboto Mono", monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--md-sys-on-surface);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.evidence-row .value.alert { color: var(--md-sys-error); }
+.evidence-row .value.ok    { color: var(--md-sys-success); }
+
+/* Slider (M3 style) */
+.sliders {
+  background: var(--md-sys-surface-container);
+  padding: 16px 18px;
+  border-radius: var(--md-shape-md);
+}
+
+.slider-row {
+  margin-bottom: 18px;
+}
+
+.slider-row:last-child { margin-bottom: 0; }
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.slider-label .name {
+  font-size: 13px;
+  color: var(--md-sys-on-surface);
+  font-weight: 500;
+}
+
+.slider-label .caption {
+  font-size: 12px;
+  color: var(--md-sys-on-surface-variant);
+  margin-left: 10px;
+}
+
+.slider-label .val {
+  font-family: "Roboto Mono", monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-sys-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--md-sys-surface-container-highest);
+  border-radius: var(--md-shape-full);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--md-sys-primary);
+  border-radius: var(--md-shape-full);
+  margin-top: -8px;
+  border: 0;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--md-sys-primary) 0%, transparent);
+  transition: box-shadow 120ms ease;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb {
+  box-shadow: 0 0 0 10px color-mix(in srgb, var(--md-sys-primary) 10%, transparent);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  background: var(--md-sys-surface-container-highest);
+  border-radius: var(--md-shape-full);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--md-sys-primary);
+  border-radius: var(--md-shape-full);
+  border: 0;
+}
+
+.slider-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--md-sys-on-surface-variant);
+  margin-top: 4px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+/* Trust score readout */
+.score-readout {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--sp-5);
+  align-items: center;
+  padding: var(--sp-5) var(--sp-6);
+  margin-top: var(--sp-4);
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-surface-container);
+}
+
+.score-gauge { width: 180px; height: 180px; flex: 0 0 auto; }
+
+.score-text .label {
+  font-size: var(--fs-0);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--md-sys-on-surface-variant);
+  margin-bottom: var(--sp-2);
+}
+
+.score-text .value {
+  font-family: "Roboto Mono", monospace;
+  font-size: var(--fs-7);
+  font-weight: 600;
+  letter-spacing: -1.5px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-text .value.alert { color: var(--md-sys-error); }
+.score-text .value.warn  { color: var(--md-sys-warning); }
+.score-text .value.ok    { color: var(--md-sys-success); }
+
+.score-text .band-ref {
+  font-size: var(--fs-2);
+  color: var(--md-sys-on-surface-variant);
+  margin-left: var(--sp-2);
+  font-family: "Roboto Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-text .copy {
+  font-size: var(--fs-0);
+  color: var(--md-sys-on-surface-variant);
+  margin-top: var(--sp-3);
+  line-height: 1.55;
+  max-width: 30ch;
+}
+
+/* ==========================================================================
+   EVIDENCE ROW
+   ========================================================================== */
+.evidence-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr);
+  gap: var(--sp-5);
+}
+
+@media (max-width: 1280px) {
+  .evidence-grid { grid-template-columns: 1fr; }
+}
+
+.chart-frame {
+  padding: var(--sp-2) var(--sp-6) var(--sp-5);
+}
+
+.chart-frame svg {
+  display: block;
+  width: 100%;
+  height: 440px;
+  overflow: visible;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-5);
+  padding: 0 var(--sp-6) var(--sp-5);
+  font-size: var(--fs-0);
+  font-weight: 500;
+  color: var(--md-sys-on-surface-variant);
+  letter-spacing: 0.3px;
+}
+
+.legend-item { display: inline-flex; align-items: center; gap: var(--sp-2); }
+
+.sw {
+  width: 14px; height: 14px; border-radius: 3px;
+  display: inline-block;
+}
+
+.sw.ref { background: var(--md-sys-primary); height: 3px; width: 22px; border-radius: 0; }
+.sw.band { background: color-mix(in srgb, var(--md-sys-primary) 20%, transparent); border: 1px solid var(--md-sys-primary); opacity: 0.7; }
+.sw.base { background: var(--md-sys-success); }
+.sw.alert { background: var(--md-sys-error); }
+
+.category-body {
+  padding: var(--sp-2) var(--sp-6) var(--sp-5);
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.cat-row {
+  display: grid;
+  grid-template-columns: 150px 1fr 64px;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-surface-container);
+}
+
+.cat-row .name {
+  font-size: var(--fs-1);
+  font-weight: 500;
+  color: var(--md-sys-on-surface);
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.cat-row .track {
+  position: relative;
+  height: 10px;
+  border-radius: var(--md-shape-full);
+  background: var(--md-sys-surface-container-highest);
+  overflow: hidden;
+}
+
+.cat-row .fill {
+  position: absolute;
+  left: 0; top: 0; height: 100%;
+  border-radius: var(--md-shape-full);
+  background: var(--md-sys-primary);
+}
+
+.cat-row .fill.current { background: var(--md-sys-error); }
+
+.cat-row .value {
+  font-family: "Roboto Mono", monospace;
+  font-size: var(--fs-2);
+  font-weight: 600;
+  text-align: right;
+  color: var(--md-sys-on-surface);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.2px;
+}
+
+/* ==========================================================================
+   DECISION FORM (M3 filled fields, selection list)
+   ========================================================================== */
+.form-field { margin-bottom: 14px; }
+
+.tf-filled {
+  position: relative;
+  background: var(--md-sys-surface-container-highest);
+  border-radius: var(--md-shape-sm) var(--md-shape-sm) 0 0;
+  padding: 24px 16px 8px;
+  border-bottom: 1px solid var(--md-sys-outline);
+  transition: border-color 120ms ease;
+}
+
+.tf-filled:focus-within { border-bottom-color: var(--md-sys-primary); border-bottom-width: 2px; padding-bottom: 7px; }
+
+.tf-filled label {
+  position: absolute;
+  left: 16px;
+  top: 8px;
+  font-size: 12px;
+  color: var(--md-sys-on-surface-variant);
+  letter-spacing: 0.4px;
+}
+
+.tf-filled textarea {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  font-size: 14px;
+  color: var(--md-sys-on-surface);
+  line-height: 1.5;
+}
+
+.tf-filled textarea::placeholder {
+  color: var(--md-sys-outline);
+}
+
+.decision-list {
+  display: grid;
+  gap: 8px;
+}
+
+.decision-item {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--md-sys-outline-variant);
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-surface-container);
+  cursor: pointer;
+  transition: border-color 120ms, background 120ms;
+}
+
+.decision-item:hover {
+  background: var(--md-sys-surface-container-high);
+}
+
+.decision-item.selected {
+  border-color: var(--md-sys-primary);
+  background: color-mix(in srgb, var(--md-sys-primary) 10%, var(--md-sys-surface-container));
+}
+
+.decision-item .leading {
+  display: grid;
+  place-items: center;
+  color: var(--md-sys-on-surface-variant);
+}
+
+.decision-item.selected .leading {
+  color: var(--md-sys-primary);
+}
+
+.decision-item .md-radio {
+  width: 20px; height: 20px;
+  border: 2px solid var(--md-sys-outline);
+  border-radius: var(--md-shape-full);
+  display: grid;
+  place-items: center;
+}
+
+.decision-item.selected .md-radio {
+  border-color: var(--md-sys-primary);
+}
+
+.decision-item.selected .md-radio::after {
+  content: "";
+  width: 10px; height: 10px;
+  border-radius: var(--md-shape-full);
+  background: var(--md-sys-primary);
+}
+
+.decision-item .title {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  color: var(--md-sys-on-surface);
+}
+
+.decision-item .sub {
+  font-size: 12px;
+  color: var(--md-sys-on-surface-variant);
+  margin-top: 2px;
+  letter-spacing: 0.4px;
+}
+
+.kbd-chip {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--md-sys-on-surface-variant);
+  border: 1px solid var(--md-sys-outline-variant);
+  border-radius: var(--md-shape-xs);
+  background: var(--md-sys-surface);
+}
+
+.attest-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-surface-container);
+  margin-bottom: var(--sp-4);
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid transparent;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.attest-row:hover {
+  background: var(--md-sys-surface-container-high);
+}
+
+.attest-row .md-checkbox {
+  width: 20px; height: 20px;
+  border: 2px solid var(--md-sys-outline);
+  border-radius: var(--md-shape-xs);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  margin-top: 1px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.attest-row input {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+  padding: 0; margin: -1px;
+}
+
+.attest-row.checked {
+  border-color: color-mix(in srgb, var(--md-sys-primary) 50%, transparent);
+}
+
+.attest-row.checked .md-checkbox {
+  background: var(--md-sys-primary);
+  border-color: var(--md-sys-primary);
+}
+
+.attest-row.checked .md-checkbox::after {
+  content: "check";
+  font-family: "Material Symbols Outlined";
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--md-sys-on-primary);
+}
+
+.attest-row:focus-within {
+  outline: 2px solid var(--md-sys-primary);
+  outline-offset: 2px;
+}
+
+.attest-row .copy {
+  font-size: 13px;
+  color: var(--md-sys-on-surface);
+  line-height: 1.5;
+}
+
+.attest-row .copy small {
+  display: block;
+  font-size: 12px;
+  color: var(--md-sys-on-surface-variant);
+  margin-top: 2px;
+}
+
+/* M3 buttons */
+.btn-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 24px;
+  border-radius: var(--md-shape-full);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  transition: background 120ms, box-shadow 120ms;
+}
+
+.btn-filled {
+  background: var(--md-sys-primary);
+  color: var(--md-sys-on-primary);
+}
+
+.btn-filled:hover:not(:disabled) {
+  box-shadow: var(--md-elev-1);
+  background: color-mix(in srgb, var(--md-sys-primary) 92%, white);
+}
+
+.btn-filled:disabled {
+  background: color-mix(in srgb, var(--md-sys-on-surface) 12%, transparent);
+  color: color-mix(in srgb, var(--md-sys-on-surface) 38%, transparent);
+  cursor: not-allowed;
+}
+
+.btn-text {
+  background: transparent;
+  color: var(--md-sys-primary);
+  padding: 0 12px;
+}
+
+.btn-text:hover {
+  background: color-mix(in srgb, var(--md-sys-primary) 8%, transparent);
+}
+
+/* ==========================================================================
+   ARTIFACT PREVIEW
+   ========================================================================== */
+.artifact-body {
+  padding: 0 20px 20px;
+}
+
+.sheet {
+  background: #FAFAF7;
+  color: #1B1D1F;
+  border-radius: var(--md-shape-md);
+  padding: 22px 26px;
+  font-family: "Roboto Flex", "Roboto", sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+  max-height: 540px;
+  overflow-y: auto;
+  box-shadow: var(--md-elev-2);
+}
+
+.sheet::-webkit-scrollbar { width: 8px; }
+.sheet::-webkit-scrollbar-thumb { background: #CFCBC4; border-radius: var(--md-shape-full); }
+
+.sheet .sheet-top {
+  border-bottom: 2px solid #1B1D1F;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+.sheet h3 {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.15px;
+}
+
+.sheet .sheet-meta {
+  font-size: 11px;
+  color: #58514C;
+  margin-top: 4px;
+  letter-spacing: 0.4px;
+}
+
+.sheet h4 {
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #58514C;
+  margin: 16px 0 6px;
+  font-weight: 500;
+}
+
+.sheet .sheet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  font-size: 12.5px;
+}
+
+.sheet .sheet-grid strong { font-weight: 500; }
+
+.sheet .sheet-notes {
+  padding: 10px 14px;
+  background: #F0EDE6;
+  border-left: 3px solid #58514C;
+  font-size: 12.5px;
+  border-radius: 0 var(--md-shape-xs) var(--md-shape-xs) 0;
+}
+
+.sheet .sheet-foot {
+  margin-top: 18px;
+  padding-top: 10px;
+  border-top: 1px solid #D4D0C8;
+  font-size: 11px;
+  color: #58514C;
+}
+
+.sheet .sheet-foot .sig {
+  display: block;
+  color: #1B1D1F;
+  font-weight: 500;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.sheet.empty {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: var(--md-sys-surface-container);
+  color: var(--md-sys-on-surface-variant);
+  border: 1px dashed var(--md-sys-outline-variant);
+  box-shadow: none;
+  min-height: 540px;
+  font-size: var(--fs-1);
+  letter-spacing: 0.2px;
+}
+
+.sheet.empty .empty-icon {
+  display: grid;
+  place-items: center;
+  width: 56px; height: 56px;
+  border-radius: var(--md-shape-full);
+  background: var(--md-sys-surface-container-high);
+  color: var(--md-sys-outline);
+  margin: 0 auto var(--sp-3);
+}
+
+.sheet.empty .empty-icon .material-symbols-outlined {
+  font-size: 30px;
+}
+
+.sheet.empty .empty-title {
+  font-size: var(--fs-2);
+  color: var(--md-sys-on-surface);
+  font-weight: 500;
+  margin-bottom: var(--sp-1);
+  letter-spacing: 0.15px;
+}
+
+.sheet.empty .empty-copy {
+  font-size: var(--fs-0);
+  color: var(--md-sys-on-surface-variant);
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   ACTIVITY LOG
+   ========================================================================== */
+.activity-body {
+  padding: 0 20px 20px;
+  display: grid;
+  gap: 8px;
+}
+
+.activity-row {
+  display: grid;
+  grid-template-columns: 180px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-surface-container);
+}
+
+.activity-row .time {
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  color: var(--md-sys-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-row .what {
+  font-size: 13px;
+  color: var(--md-sys-on-surface);
+}
+
+.activity-row .what b {
+  color: var(--md-sys-primary);
+  font-weight: 500;
+}
+
+.activity-row .verdict {
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--md-shape-sm);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+}
+
+.activity-row .verdict.approve { background: var(--md-sys-success-container); color: var(--md-sys-success); }
+.activity-row .verdict.decline { background: var(--md-sys-error-container); color: var(--md-sys-on-error-container); }
+.activity-row .verdict.hold    { background: var(--md-sys-warning-container); color: var(--md-sys-warning); }
+
+.empty-state {
+  padding: 28px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--md-sys-on-surface-variant);
+}
+
+/* Snackbar */
+.snackbar {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--md-sys-surface-container-highest);
+  color: var(--md-sys-on-surface);
+  padding: 10px 16px;
+  border-radius: var(--md-shape-xs);
+  box-shadow: var(--md-elev-3);
+  font-size: 14px;
+  letter-spacing: 0.25px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  pointer-events: none;
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), opacity 160ms ease;
+  opacity: 0;
+  min-width: 340px;
+}
+
+.snackbar.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.snackbar .action {
+  color: var(--md-sys-primary);
+  font-weight: 500;
+  text-transform: none;
+  font-size: 14px;
+  background: transparent;
+  padding: 6px 8px;
+  border-radius: var(--md-shape-full);
+}
+
+.snackbar .action:hover {
+  background: color-mix(in srgb, var(--md-sys-primary) 10%, transparent);
+}
+
+/* ==========================================================================
+   TOUR OVERLAY
+   ========================================================================== */
+.btn-tour {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--md-shape-full);
+  border: 1px solid var(--md-sys-outline);
+  color: var(--md-sys-on-surface);
+  background: transparent;
+  font-size: var(--fs-1);
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.btn-tour:hover {
+  background: color-mix(in srgb, var(--md-sys-on-surface) 8%, transparent);
+  border-color: var(--md-sys-on-surface);
+}
+
+.btn-tour .material-symbols-outlined { font-size: 20px; }
+
+.tour-active .btn-tour {
+  background: var(--md-sys-primary-container);
+  color: var(--md-sys-on-primary-container);
+  border-color: transparent;
+}
+
+.tour-root {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.tour-active .tour-root { visibility: visible; }
+
+.tour-highlight {
+  position: fixed;
+  top: 0; left: 0; width: 0; height: 0;
+  border: 2px solid var(--md-sys-primary);
+  border-radius: var(--md-shape-md);
+  box-shadow:
+    0 0 0 9999px rgba(6, 10, 12, 0.78),
+    0 0 0 6px color-mix(in srgb, var(--md-sys-primary) 35%, transparent);
+  pointer-events: auto;
+  transition:
+    top 280ms cubic-bezier(0.4, 0, 0.2, 1),
+    left 280ms cubic-bezier(0.4, 0, 0.2, 1),
+    width 280ms cubic-bezier(0.4, 0, 0.2, 1),
+    height 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tour-popover {
+  position: fixed;
+  top: 0; left: 0;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  background: var(--md-sys-surface-container-high);
+  border: 1px solid var(--md-sys-outline-variant);
+  border-radius: var(--md-shape-md);
+  padding: var(--sp-5) var(--sp-6);
+  box-shadow: var(--md-elev-4);
+  pointer-events: auto;
+  transition: top 280ms cubic-bezier(0.4, 0, 0.2, 1), left 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--md-sys-on-surface);
+}
+
+.tour-step-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--sp-2);
+}
+
+.tour-step-count {
+  font-family: "Roboto Mono", monospace;
+  font-size: var(--fs-0);
+  color: var(--md-sys-primary);
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tour-close {
+  width: 32px; height: 32px;
+  border-radius: var(--md-shape-full);
+  color: var(--md-sys-on-surface-variant);
+  display: grid;
+  place-items: center;
+}
+
+.tour-close:hover {
+  background: color-mix(in srgb, var(--md-sys-on-surface) 10%, transparent);
+  color: var(--md-sys-on-surface);
+}
+
+.tour-title {
+  font-size: var(--fs-3);
+  font-weight: 600;
+  letter-spacing: 0;
+  margin-bottom: var(--sp-3);
+  line-height: 1.25;
+  color: var(--md-sys-on-surface);
+}
+
+.tour-section {
+  margin-bottom: var(--sp-4);
+}
+
+.tour-section:last-of-type { margin-bottom: var(--sp-5); }
+
+.tour-section .tour-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-0);
+  color: var(--md-sys-on-surface-variant);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-bottom: var(--sp-2);
+}
+
+.tour-section .tour-kicker .dot {
+  width: 6px; height: 6px;
+  border-radius: var(--md-shape-full);
+  background: var(--md-sys-primary);
+}
+
+.tour-section .tour-kicker.impact .dot {
+  background: var(--md-sys-warning);
+}
+
+.tour-section p {
+  font-size: var(--fs-1);
+  line-height: 1.6;
+  color: var(--md-sys-on-surface);
+}
+
+.tour-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+}
+
+.tour-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.tour-dot {
+  width: 8px; height: 8px;
+  border-radius: var(--md-shape-full);
+  background: var(--md-sys-outline-variant);
+  transition: background 160ms ease, width 160ms ease;
+}
+
+.tour-dot.done { background: var(--md-sys-outline); }
+.tour-dot.active {
+  background: var(--md-sys-primary);
+  width: 22px;
+  border-radius: var(--md-shape-full);
+}
+
+.tour-nav { display: flex; gap: var(--sp-2); }
+
+.tour-btn {
+  height: 36px;
+  padding: 0 var(--sp-4);
+  border-radius: var(--md-shape-full);
+  font-size: var(--fs-1);
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tour-btn.primary {
+  background: var(--md-sys-primary);
+  color: var(--md-sys-on-primary);
+}
+
+.tour-btn.primary:hover {
+  background: color-mix(in srgb, var(--md-sys-primary) 92%, white);
+}
+
+.tour-btn.ghost {
+  background: transparent;
+  color: var(--md-sys-on-surface-variant);
+  padding: 0 var(--sp-3);
+}
+
+.tour-btn.ghost:hover {
+  color: var(--md-sys-on-surface);
+  background: color-mix(in srgb, var(--md-sys-on-surface) 8%, transparent);
+}
+
+.tour-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Motion-reduce */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ====================== TOP APP BAR ====================== -->
+  <header class="app-bar" role="banner">
+    <div class="app-bar-title">
+      <span class="brand">InclineTrust</span>
+      <span class="subtitle">Exception review</span>
+    </div>
+
+    <div class="app-bar-spacer"></div>
+
+    <div class="segmented" role="radiogroup" aria-label="Scenario">
+      <button type="button" class="segment selected" role="radio" aria-checked="true" data-scenario="baseline">
+        <span class="material-symbols-outlined">today</span>Month-end
+      </button>
+      <button type="button" class="segment" role="radio" aria-checked="false" data-scenario="vendor">
+        <span class="material-symbols-outlined">badge</span>Vendor burst
+      </button>
+      <button type="button" class="segment" role="radio" aria-checked="false" data-scenario="policy">
+        <span class="material-symbols-outlined">policy</span>Policy drift
+      </button>
+      <button type="button" class="segment" role="radio" aria-checked="false" data-scenario="travel">
+        <span class="material-symbols-outlined">flight</span>Travel surge
+      </button>
+    </div>
+
+    <div class="app-bar-spacer"></div>
+
+    <button class="btn btn-tour" id="tourBtn" type="button" aria-label="Start guided tour">
+      <span class="material-symbols-outlined">explore</span>
+      Guided tour
+    </button>
+    <button class="icon-btn" type="button" aria-label="Keyboard shortcuts" title="Arrow keys, A, D, H">
+      <span class="material-symbols-outlined">keyboard</span>
+    </button>
+    <button class="icon-btn" type="button" aria-label="Notifications">
+      <span class="material-symbols-outlined">notifications</span>
+    </button>
+    <div class="avatar" title="Reviewer">SM</div>
+  </header>
+
+  <!-- ====================== FILTER BAR ====================== -->
+  <nav class="filter-bar" aria-label="Filters">
+    <div class="chip-dropdown">
+      <button class="chip selected" id="serviceChip" type="button" aria-haspopup="menu" aria-expanded="false">
+        <span class="material-symbols-outlined">check</span>
+        <span id="serviceChipLabel">All lines</span>
+        <span class="material-symbols-outlined">arrow_drop_down</span>
+      </button>
+      <div class="chip-menu" id="serviceMenu" role="menu">
+        <button class="chip-menu-item active" data-service="all">All lines</button>
+        <button class="chip-menu-item" data-service="software">Software and SaaS</button>
+        <button class="chip-menu-item" data-service="infra">Infrastructure</button>
+        <button class="chip-menu-item" data-service="travel">Travel and expense</button>
+        <button class="chip-menu-item" data-service="pro">Professional services</button>
+        <button class="chip-menu-item" data-service="marketing">Marketing</button>
+      </div>
+    </div>
+
+    <div class="chip-dropdown">
+      <button class="chip selected" id="confChip" type="button" aria-haspopup="menu" aria-expanded="false">
+        <span class="material-symbols-outlined">check</span>
+        <span id="confChipLabel">Confidence 70+</span>
+        <span class="material-symbols-outlined">arrow_drop_down</span>
+      </button>
+      <div class="chip-menu" id="confMenu" role="menu">
+        <button class="chip-menu-item" data-conf="0">Any confidence</button>
+        <button class="chip-menu-item" data-conf="50">Confidence 50+</button>
+        <button class="chip-menu-item active" data-conf="70">Confidence 70+</button>
+        <button class="chip-menu-item" data-conf="85">Confidence 85+</button>
+      </div>
+    </div>
+
+    <button class="chip" id="resetChip" type="button">
+      <span class="material-symbols-outlined">restart_alt</span>Reset
+    </button>
+
+    <span class="filter-summary" id="filterSummary">6 flagged</span>
+  </nav>
+
+  <!-- ====================== CONTENT ====================== -->
+  <main class="content">
+    <!-- Inbox -->
+    <section class="card elevated a-inbox" aria-labelledby="inboxHeading">
+      <header class="card-header">
+        <h2 id="inboxHeading">Exceptions</h2>
+        <span class="meta" id="inboxBadge">6 of 6</span>
+      </header>
+      <div class="inbox-list" id="inboxList" role="listbox" aria-label="Flagged transactions"></div>
+    </section>
+
+    <!-- Case detail -->
+    <section class="card elevated a-case" aria-labelledby="caseHeading">
+      <div class="case-top">
+        <div class="ident">
+          <div class="label">Case</div>
+          <h2 id="caseHeading">Apex Fintech Solutions</h2>
+          <div class="sub" id="caseSub">2026-04-15, Software and SaaS, flagged case ID APEX-2026-0415</div>
+        </div>
+        <div class="amount">
+          <div class="label" style="text-align:right;">Amount</div>
+          <div class="amount-value" id="caseAmount">$12,450.00</div>
+          <div class="amount-delta" id="caseDelta">5.9x vs 3 month average</div>
+        </div>
+      </div>
+
+      <div class="case-grid">
+        <!-- Why flagged -->
+        <div>
+          <div class="section-label">Why flagged</div>
+          <p class="explanation" id="explanation"></p>
+
+          <div class="evidence-list">
+            <div class="evidence-row">
+              <div>
+                <div class="head">Historical baseline</div>
+                <div class="copy">Last 12 months averaged <span id="evBaseline">$2,100</span>, sigma <span id="evSigma">$340</span>.</div>
+              </div>
+              <div class="value" id="evBaselineValue">$2,100</div>
+            </div>
+            <div class="evidence-row">
+              <div>
+                <div class="head">Vendor-category fit</div>
+                <div class="copy"><span id="evCategory">Software and SaaS</span>, peer cluster at <span id="evCluster">$1.8k to $3.2k</span>.</div>
+              </div>
+              <div class="value alert" id="evFitValue">Outlier</div>
+            </div>
+            <div class="evidence-row">
+              <div>
+                <div class="head">Policy alignment</div>
+                <div class="copy">Matches <span id="evPolicy">Software renewals over $10k</span>.</div>
+              </div>
+              <div class="value" id="evPolicyValue">Attention</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Decision geometry -->
+        <div>
+          <div class="section-label">Decision weights</div>
+          <div class="sliders">
+            <div class="slider-row">
+              <div class="slider-label">
+                <span><span class="name">Vendor history</span><span class="caption">Past spend weight</span></span>
+                <span class="val" id="valHistory">0.70</span>
+              </div>
+              <input id="sliderHistory" type="range" min="0" max="1" step="0.05" value="0.70" aria-label="Vendor history weight" />
+              <div class="slider-scale"><span>Ignore</span><span>Strict</span></div>
+            </div>
+            <div class="slider-row">
+              <div class="slider-label">
+                <span><span class="name">Policy enforcement</span><span class="caption">Category rule rigidity</span></span>
+                <span class="val" id="valPolicy">High</span>
+              </div>
+              <input id="sliderPolicy" type="range" min="0" max="2" step="1" value="2" aria-label="Policy enforcement level" />
+              <div class="slider-scale"><span>Low</span><span>Medium</span><span>High</span></div>
+            </div>
+            <div class="slider-row">
+              <div class="slider-label">
+                <span><span class="name">Amount sensitivity</span><span class="caption">Outlier trigger speed</span></span>
+                <span class="val" id="valAmount">0.85</span>
+              </div>
+              <input id="sliderAmount" type="range" min="0" max="1" step="0.05" value="0.85" aria-label="Amount sensitivity" />
+              <div class="slider-scale"><span>Permissive</span><span>Tight</span></div>
+            </div>
+          </div>
+
+          <div class="score-readout">
+            <svg class="score-gauge" viewBox="0 0 140 140" id="gauge" aria-hidden="true"></svg>
+            <div class="score-text">
+              <div class="label">Live trust score</div>
+              <div>
+                <span class="value alert" id="trustScore" aria-live="polite">78</span>
+                <span class="band-ref" id="trustBand">+/- 5</span>
+              </div>
+              <div class="copy" id="trustCopy">Elevated risk at current weights. Verify at least one supporting signal before approving.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Evidence row -->
+    <section class="a-evidence">
+      <div class="evidence-grid">
+        <div class="card elevated" aria-labelledby="timelineHeading">
+          <header class="card-header">
+            <h2 id="timelineHeading">Vendor spend timeline</h2>
+            <span class="meta" id="timelineMeta">12 months</span>
+          </header>
+          <div class="chart-frame">
+            <svg id="timelineChart" role="img" aria-label="Monthly vendor spend with baseline and uncertainty band"></svg>
+          </div>
+          <div class="legend">
+            <span class="legend-item"><span class="sw ref"></span>Adjusted baseline</span>
+            <span class="legend-item"><span class="sw band"></span>+/- 1 sigma band</span>
+            <span class="legend-item"><span class="sw base"></span>In-pattern month</span>
+            <span class="legend-item"><span class="sw alert"></span>Flagged month</span>
+          </div>
+        </div>
+
+        <div class="card elevated" aria-labelledby="fitHeading">
+          <header class="card-header">
+            <h2 id="fitHeading">Vendor-category fit</h2>
+            <span class="meta">Peer cohort</span>
+          </header>
+          <div class="category-body" id="categoryBody"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Decision form -->
+    <section class="card elevated a-decision" aria-labelledby="decisionHeading">
+      <header class="card-header">
+        <h2 id="decisionHeading">Decision</h2>
+        <span class="meta">SOX audit record</span>
+      </header>
+      <div class="card-body">
+        <div class="form-field">
+          <div class="tf-filled">
+            <label for="userNotes">Reviewer notes</label>
+            <textarea id="userNotes" placeholder="Contacted vendor, confirmed annual renewal, amount matches contract on file dated 2025-11-04."></textarea>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:4px;">Verdict</div>
+        <div class="decision-list" role="radiogroup" aria-label="Verdict">
+          <label class="decision-item" data-decision="approve">
+            <span class="leading"><span class="md-radio"></span></span>
+            <span>
+              <span class="title">Approve transaction</span>
+              <span class="sub">In-policy, record evidence and proceed.</span>
+            </span>
+            <span class="kbd-chip">A</span>
+            <input type="radio" name="decision" value="approve" style="display:none" />
+          </label>
+          <label class="decision-item" data-decision="decline">
+            <span class="leading"><span class="md-radio"></span></span>
+            <span>
+              <span class="title">Decline and escalate</span>
+              <span class="sub">Alert CFO, freeze vendor, open exception review.</span>
+            </span>
+            <span class="kbd-chip">D</span>
+            <input type="radio" name="decision" value="decline" style="display:none" />
+          </label>
+          <label class="decision-item" data-decision="hold">
+            <span class="leading"><span class="md-radio"></span></span>
+            <span>
+              <span class="title">Hold for investigation</span>
+              <span class="sub">Request evidence, re-review in 48 hours.</span>
+            </span>
+            <span class="kbd-chip">H</span>
+            <input type="radio" name="decision" value="hold" style="display:none" />
+          </label>
+        </div>
+
+        <label class="attest-row" id="attestRow" for="attest" style="margin-top:14px;">
+          <input type="checkbox" id="attest" />
+          <span class="md-checkbox" aria-hidden="true"></span>
+          <span class="copy">
+            I attest the verdict reflects reviewer judgment at captured weights.
+            <small>Required for audit record, hashed at save.</small>
+          </span>
+        </label>
+
+        <div class="btn-row">
+          <button class="btn btn-text" id="clearBtn" type="button">Clear</button>
+          <button class="btn btn-filled" id="recordBtn" type="button" disabled>
+            <span class="material-symbols-outlined">lock</span>
+            Record action
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Artifact preview -->
+    <section class="card elevated a-artifact" aria-labelledby="artifactHeading">
+      <header class="card-header">
+        <h2 id="artifactHeading">Audit artifact</h2>
+        <span class="meta" id="artifactBadge">Not yet recorded</span>
+      </header>
+      <div class="artifact-body">
+        <div class="sheet empty" id="sheet">
+          <div>
+            <span class="empty-icon"><span class="material-symbols-outlined">draft</span></span>
+            <div class="empty-title">No artifact yet</div>
+            <div class="empty-copy">Record a verdict to generate a signed, immutable audit record here.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Activity log -->
+    <section class="card elevated a-activity" aria-labelledby="activityHeading">
+      <header class="card-header">
+        <h2 id="activityHeading">Session activity</h2>
+        <span class="meta" id="activityBadge">0 recorded</span>
+      </header>
+      <div class="activity-body" id="activityLog">
+        <div class="empty-state">No activity yet. Record a verdict above to begin the trail.</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="snackbar" id="snackbar" role="status" aria-live="polite">
+  <span id="snackbarText">Action recorded.</span>
+  <button class="action" type="button" id="snackbarAction">Undo</button>
+</div>
+
+<div class="tour-root" id="tourRoot" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+  <div class="tour-highlight" id="tourHighlight" aria-hidden="true"></div>
+  <div class="tour-popover" id="tourPopover">
+    <div class="tour-step-meta">
+      <span class="tour-step-count" id="tourStepCount">Step 1 of 7</span>
+      <button class="tour-close" id="tourClose" type="button" aria-label="Close tour">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <h3 class="tour-title" id="tourTitle">Title</h3>
+    <div class="tour-section">
+      <div class="tour-kicker"><span class="dot"></span>Critical path</div>
+      <p id="tourPath">Path body.</p>
+    </div>
+    <div class="tour-section">
+      <div class="tour-kicker impact"><span class="dot"></span>Design impact</div>
+      <p id="tourImpact">Impact body.</p>
+    </div>
+    <div class="tour-footer">
+      <div class="tour-dots" id="tourDots" aria-hidden="true"></div>
+      <div class="tour-nav">
+        <button class="tour-btn ghost" id="tourBack" type="button">Back</button>
+        <button class="tour-btn ghost" id="tourSkip" type="button">Skip</button>
+        <button class="tour-btn primary" id="tourNext" type="button">
+          Next
+          <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   DATA
+   ========================================================================= */
+const SCENARIOS = {
+  baseline: {
+    label: "Month-end close",
+    cases: [
+      {
+        id: "APEX-2026-0415",
+        vendor: "Apex Fintech Solutions",
+        category: "software",
+        categoryLabel: "Software and SaaS",
+        date: "2026-04-15",
+        amount: 12450,
+        historical: [1980, 2150, 2050, 2200, 2100, 2080, 1950, 2300, 2120, 2050, 2180, 2070],
+        baseline: 2100,
+        sigma: 340,
+        severity: "critical",
+        tags: ["Amount outlier", "Category fit", "Approval gap"],
+        reason: "Deviates 5.9x from 3 month average. Vendor-category fit weak against peer cluster. Policy requires 2 approvals, only 1 recorded.",
+        peers: [
+          { name: "Productivity SaaS", fit: 0.92 },
+          { name: "Dev infra SaaS", fit: 0.74 },
+          { name: "Fintech API", fit: 0.41 },
+          { name: "Current txn", fit: 0.18, current: true }
+        ],
+        policy: "Software renewals over $10k"
+      },
+      {
+        id: "CLI-2026-0414",
+        vendor: "CloudInfra LLC",
+        category: "infra",
+        categoryLabel: "Infrastructure",
+        date: "2026-04-14",
+        amount: 8200,
+        historical: [5200, 5400, 5300, 5450, 5600, 5500, 5350, 5420, 5550, 5700, 5650, 5580],
+        baseline: 5470,
+        sigma: 180,
+        severity: "high",
+        tags: ["Timing anomaly", "3 sigma"],
+        reason: "Invoice lands on day 14. 11 of 12 months post on day 1. 3 sigma above 90 day mean.",
+        peers: [
+          { name: "Core compute", fit: 0.86 },
+          { name: "Storage services", fit: 0.79 },
+          { name: "CDN", fit: 0.58 },
+          { name: "Current txn", fit: 0.62, current: true }
+        ],
+        policy: "Infrastructure, recurring monthly"
+      },
+      {
+        id: "GTC-2026-0412",
+        vendor: "Global Travel Co",
+        category: "travel",
+        categoryLabel: "Travel and expense",
+        date: "2026-04-12",
+        amount: 4890,
+        historical: [0,0,0,0,0,0,0,0,0,0,0,0],
+        baseline: 0,
+        sigma: 0,
+        severity: "high",
+        tags: ["First transaction", "No policy match"],
+        reason: "First transaction with this vendor. No matching travel vendor policy. Amount above single trip threshold.",
+        peers: [
+          { name: "Corporate travel", fit: 0.72 },
+          { name: "Conference", fit: 0.64 },
+          { name: "Lodging", fit: 0.45 },
+          { name: "Current txn", fit: 0.30, current: true }
+        ],
+        policy: "Travel, single trip over $3k"
+      },
+      {
+        id: "LGL-2026-0411",
+        vendor: "Meridian Legal Group",
+        category: "pro",
+        categoryLabel: "Professional services",
+        date: "2026-04-11",
+        amount: 22400,
+        historical: [18000, 19500, 21000, 19800, 20400, 20800, 19200, 21600, 20000, 20600, 21200, 20800],
+        baseline: 20300,
+        sigma: 900,
+        severity: "medium",
+        tags: ["Within band", "Quarterly cadence"],
+        reason: "Within expected band for quarterly retainer. Flagged because last quarter invoice ran 9 days early.",
+        peers: [
+          { name: "Legal retainer", fit: 0.88 },
+          { name: "M and A counsel", fit: 0.71 },
+          { name: "Current txn", fit: 0.83, current: true }
+        ],
+        policy: "Quarterly retainer over $20k"
+      },
+      {
+        id: "MKT-2026-0410",
+        vendor: "Northwind Media",
+        category: "marketing",
+        categoryLabel: "Marketing",
+        date: "2026-04-10",
+        amount: 6180,
+        historical: [3400, 3600, 3800, 3900, 4100, 4050, 4200, 4350, 4300, 4400, 4600, 4750],
+        baseline: 4100,
+        sigma: 410,
+        severity: "critical",
+        tags: ["Trend break", "Amount outlier"],
+        reason: "Linear growth pattern ends in a 30% step. Pattern break detected. Amount 1.5x above 3 month trend.",
+        peers: [
+          { name: "Performance media", fit: 0.81 },
+          { name: "Content media", fit: 0.67 },
+          { name: "Current txn", fit: 0.48, current: true }
+        ],
+        policy: "Marketing campaigns over $5k"
+      },
+      {
+        id: "SAP-2026-0409",
+        vendor: "Sapient Data Labs",
+        category: "software",
+        categoryLabel: "Software and SaaS",
+        date: "2026-04-09",
+        amount: 3680,
+        historical: [3600, 3620, 3650, 3640, 3660, 3670, 3650, 3680, 3680, 3680, 3680, 3680],
+        baseline: 3660,
+        sigma: 25,
+        severity: "low",
+        tags: ["In pattern"],
+        reason: "Recurring annual license, pattern stable. Flagged only by policy match on new contract clause.",
+        peers: [
+          { name: "Analytics SaaS", fit: 0.94 },
+          { name: "Current txn", fit: 0.91, current: true }
+        ],
+        policy: "Software renewals under $5k"
+      }
+    ]
+  },
+  vendor: {
+    label: "Unknown vendor burst",
+    cases: [
+      {
+        id: "NEW-2026-0415", vendor: "Orion Outsourcing", category: "pro", categoryLabel: "Professional services",
+        date: "2026-04-15", amount: 18200, historical: [0,0,0,0,0,0,0,0,0,0,0,0], baseline: 0, sigma: 0,
+        severity: "critical",
+        tags: ["First transaction", "Wire transfer", "Above threshold"],
+        reason: "First wire to this vendor. Matches no contract. 2.4x the threshold for unknown payees without W-9 on file.",
+        peers: [
+          { name: "Outsourcing", fit: 0.62 },
+          { name: "Recruiting", fit: 0.44 },
+          { name: "Current txn", fit: 0.18, current: true }
+        ],
+        policy: "Unknown vendor, over $10k"
+      },
+      {
+        id: "NEW-2026-0414", vendor: "Kepler Analytics", category: "software", categoryLabel: "Software and SaaS",
+        date: "2026-04-14", amount: 4750, historical: [0,0,0,0,0,0,0,0,0,0,0,0], baseline: 0, sigma: 0,
+        severity: "high",
+        tags: ["First transaction", "Signed contract"],
+        reason: "First transaction, but signed contract is on file dated 2026-04-01. Amount aligns with contract schedule.",
+        peers: [
+          { name: "Analytics SaaS", fit: 0.88 },
+          { name: "BI", fit: 0.74 },
+          { name: "Current txn", fit: 0.72, current: true }
+        ],
+        policy: "New vendor with contract"
+      },
+      {
+        id: "NEW-2026-0413", vendor: "Vesta Studios", category: "marketing", categoryLabel: "Marketing",
+        date: "2026-04-13", amount: 9400, historical: [0,0,0,0,0,0,0,0,0,0,0,0], baseline: 0, sigma: 0,
+        severity: "high",
+        tags: ["First transaction", "Missing PO"],
+        reason: "First transaction, no purchase order attached, amount above PO-required threshold for marketing.",
+        peers: [
+          { name: "Creative studio", fit: 0.78 },
+          { name: "Brand agency", fit: 0.66 },
+          { name: "Current txn", fit: 0.36, current: true }
+        ],
+        policy: "Marketing, PO required over $5k"
+      },
+      {
+        id: "NEW-2026-0412", vendor: "Harbor Freight Logistics", category: "pro", categoryLabel: "Professional services",
+        date: "2026-04-12", amount: 2100, historical: [0,0,0,0,0,0,0,0,0,0,0,0], baseline: 0, sigma: 0,
+        severity: "medium",
+        tags: ["First transaction", "Low amount"],
+        reason: "First transaction, amount below material threshold. Flagged only for identity verification.",
+        peers: [
+          { name: "Logistics", fit: 0.82 },
+          { name: "Current txn", fit: 0.68, current: true }
+        ],
+        policy: "Identity verification, all new vendors"
+      },
+      {
+        id: "NEW-2026-0411", vendor: "Lumen Security Audit", category: "pro", categoryLabel: "Professional services",
+        date: "2026-04-11", amount: 31000, historical: [0,0,0,0,0,0,0,0,0,0,0,0], baseline: 0, sigma: 0,
+        severity: "critical",
+        tags: ["First transaction", "Single approval", "Above exec threshold"],
+        reason: "First transaction to audit firm, amount above executive approval threshold, only CTO signature on file.",
+        peers: [
+          { name: "Security audit", fit: 0.74 },
+          { name: "Compliance", fit: 0.68 },
+          { name: "Current txn", fit: 0.40, current: true }
+        ],
+        policy: "Above executive threshold"
+      },
+      {
+        id: "NEW-2026-0410", vendor: "Brightline Catering", category: "pro", categoryLabel: "Professional services",
+        date: "2026-04-10", amount: 860, historical: [0,0,0,0,0,0,0,0,0,0,0,0], baseline: 0, sigma: 0,
+        severity: "low",
+        tags: ["First transaction", "Small amount"],
+        reason: "First transaction, amount minor. Passes all checks except unknown payee identity.",
+        peers: [
+          { name: "Office services", fit: 0.91 },
+          { name: "Current txn", fit: 0.84, current: true }
+        ],
+        policy: "Identity verification, all new vendors"
+      }
+    ]
+  },
+  policy: {
+    label: "Policy drift",
+    cases: [
+      {
+        id: "POL-2026-0415", vendor: "Northwind Media", category: "marketing", categoryLabel: "Marketing",
+        date: "2026-04-15", amount: 6180,
+        historical: [3400, 3600, 3800, 3900, 4100, 4050, 4200, 4350, 4300, 4400, 4600, 4750],
+        baseline: 4100, sigma: 410, severity: "high",
+        tags: ["Category shift", "Policy match weak"],
+        reason: "Marketing category updated last quarter. Vendor now classified Performance Media, but past spend sat under Content Media. Policy still maps to old category.",
+        peers: [
+          { name: "Performance media", fit: 0.81 },
+          { name: "Content media", fit: 0.67 },
+          { name: "Current txn", fit: 0.48, current: true }
+        ],
+        policy: "Performance Media, over $5k"
+      },
+      {
+        id: "POL-2026-0414", vendor: "CloudInfra LLC", category: "infra", categoryLabel: "Infrastructure",
+        date: "2026-04-14", amount: 8200,
+        historical: [5200, 5400, 5300, 5450, 5600, 5500, 5350, 5420, 5550, 5700, 5650, 5580],
+        baseline: 5470, sigma: 180, severity: "high",
+        tags: ["Approval flow ambiguous"],
+        reason: "Policy split infra approvals by region in March 2026. Invoice routes to old EU approver, not new NA approver.",
+        peers: [
+          { name: "Compute infra", fit: 0.82 },
+          { name: "Networking", fit: 0.68 },
+          { name: "Current txn", fit: 0.62, current: true }
+        ],
+        policy: "Infra NA regional approval"
+      },
+      {
+        id: "POL-2026-0413", vendor: "Crestline Consulting", category: "pro", categoryLabel: "Professional services",
+        date: "2026-04-13", amount: 14300,
+        historical: [12000, 12500, 13000, 12800, 13100, 13400, 13200, 13600, 13800, 14000, 14100, 14250],
+        baseline: 13200, sigma: 700, severity: "medium",
+        tags: ["Within band", "Stale policy"],
+        reason: "Recurring consultancy. Within band. Flagged because policy expired 2026-03-31 and has not been renewed.",
+        peers: [
+          { name: "Strategy consulting", fit: 0.83 },
+          { name: "Current txn", fit: 0.86, current: true }
+        ],
+        policy: "Expired, consulting retainer"
+      },
+      {
+        id: "POL-2026-0412", vendor: "Apex Fintech Solutions", category: "software", categoryLabel: "Software and SaaS",
+        date: "2026-04-12", amount: 2310,
+        historical: [1980, 2150, 2050, 2200, 2100, 2080, 1950, 2300, 2120, 2050, 2180, 2070],
+        baseline: 2100, sigma: 340, severity: "low",
+        tags: ["In pattern", "Policy tagging drift"],
+        reason: "In pattern for vendor. Flagged only because vendor tag changed from SaaS Licensing to SaaS API.",
+        peers: [
+          { name: "SaaS Licensing", fit: 0.88 },
+          { name: "SaaS API", fit: 0.71 },
+          { name: "Current txn", fit: 0.82, current: true }
+        ],
+        policy: "SaaS, recurring"
+      },
+      {
+        id: "POL-2026-0411", vendor: "Sapient Data Labs", category: "software", categoryLabel: "Software and SaaS",
+        date: "2026-04-11", amount: 3680,
+        historical: [3600, 3620, 3650, 3640, 3660, 3670, 3650, 3680, 3680, 3680, 3680, 3680],
+        baseline: 3660, sigma: 25, severity: "medium",
+        tags: ["Renewal clause drift"],
+        reason: "Auto-renewal tier rose from $3,600 to $3,680 without recorded amendment. Within tolerance but policy asks for signed amendment.",
+        peers: [
+          { name: "Analytics SaaS", fit: 0.94 },
+          { name: "Current txn", fit: 0.91, current: true }
+        ],
+        policy: "Auto-renewal amendment"
+      },
+      {
+        id: "POL-2026-0410", vendor: "Meridian Legal Group", category: "pro", categoryLabel: "Professional services",
+        date: "2026-04-10", amount: 22400,
+        historical: [18000, 19500, 21000, 19800, 20400, 20800, 19200, 21600, 20000, 20600, 21200, 20800],
+        baseline: 20300, sigma: 900, severity: "medium",
+        tags: ["Approval count"],
+        reason: "Quarterly retainer. Within band. Flagged because 2 approvers required under new March 2026 policy, one recorded.",
+        peers: [
+          { name: "Legal retainer", fit: 0.88 },
+          { name: "Current txn", fit: 0.83, current: true }
+        ],
+        policy: "Retainer over $20k"
+      }
+    ]
+  },
+  travel: {
+    label: "Travel surge",
+    cases: [
+      {
+        id: "TRV-2026-0415", vendor: "Global Travel Co", category: "travel", categoryLabel: "Travel and expense",
+        date: "2026-04-15", amount: 4890,
+        historical: [0, 0, 0, 300, 420, 680, 900, 1200, 900, 700, 400, 300],
+        baseline: 570, sigma: 360, severity: "critical",
+        tags: ["Trend break", "Above single trip cap"],
+        reason: "Travel category shows seasonal peak in summer months. April spend rarely exceeds $500, this trip is 8x that.",
+        peers: [
+          { name: "Corporate travel", fit: 0.72 },
+          { name: "Conference", fit: 0.64 },
+          { name: "Current txn", fit: 0.30, current: true }
+        ],
+        policy: "Single trip over $3k"
+      },
+      {
+        id: "TRV-2026-0414", vendor: "Continental Airways", category: "travel", categoryLabel: "Travel and expense",
+        date: "2026-04-14", amount: 1820,
+        historical: [600, 700, 750, 820, 900, 1100, 1200, 1300, 1100, 900, 700, 600],
+        baseline: 890, sigma: 240, severity: "medium",
+        tags: ["Above 1 sigma"],
+        reason: "Moderate outlier, 2 sigma above monthly mean. Likely a last minute booking.",
+        peers: [
+          { name: "Full service carriers", fit: 0.88 },
+          { name: "Current txn", fit: 0.76, current: true }
+        ],
+        policy: "Airfare, over $1.5k"
+      },
+      {
+        id: "TRV-2026-0413", vendor: "Hotel Ametsa", category: "travel", categoryLabel: "Travel and expense",
+        date: "2026-04-13", amount: 2740,
+        historical: [500, 500, 520, 540, 600, 800, 1000, 1100, 900, 700, 600, 500],
+        baseline: 690, sigma: 220, severity: "high",
+        tags: ["Lodging cap"],
+        reason: "Lodging amount above single trip cap by 14%. Flag is conservative, vendor well known.",
+        peers: [
+          { name: "Boutique hotel", fit: 0.82 },
+          { name: "Current txn", fit: 0.74, current: true }
+        ],
+        policy: "Lodging, single trip"
+      },
+      {
+        id: "TRV-2026-0412", vendor: "Metro Car Service", category: "travel", categoryLabel: "Travel and expense",
+        date: "2026-04-12", amount: 320,
+        historical: [240, 250, 260, 265, 280, 290, 310, 300, 290, 280, 270, 260],
+        baseline: 275, sigma: 25, severity: "low",
+        tags: ["Just above mean"],
+        reason: "Minor amount above monthly mean, still within 2 sigma.",
+        peers: [
+          { name: "Ground transport", fit: 0.92 },
+          { name: "Current txn", fit: 0.88, current: true }
+        ],
+        policy: "Ground transport, per trip"
+      },
+      {
+        id: "TRV-2026-0411", vendor: "Conference Bridge NYC", category: "travel", categoryLabel: "Travel and expense",
+        date: "2026-04-11", amount: 5980, historical: [0,0,0,0,0,0,0,0,0,0,0,0], baseline: 0, sigma: 0,
+        severity: "high",
+        tags: ["First transaction", "Conference registration"],
+        reason: "Conference registration for 6 attendees. First transaction with this vendor, amount above single purchase threshold.",
+        peers: [
+          { name: "Conference", fit: 0.78 },
+          { name: "Current txn", fit: 0.60, current: true }
+        ],
+        policy: "Conference registration, over $5k"
+      }
+    ]
+  }
+};
+
+const SERVICE_LABELS = {
+  all: "All lines",
+  software: "Software and SaaS",
+  infra: "Infrastructure",
+  travel: "Travel and expense",
+  pro: "Professional services",
+  marketing: "Marketing"
+};
+
+const MONTH_LABELS = ["May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr"];
+
+/* =========================================================================
+   STATE
+   ========================================================================= */
+const state = {
+  scenarioKey: "baseline",
+  serviceFilter: "all",
+  confidenceFilter: 70,
+  filteredCases: [],
+  allCases: [],
+  currentCaseId: null,
+  weights: { history: 0.70, policy: 2, amount: 0.85 },
+  decision: null,
+  attest: false,
+  notes: "",
+  activity: [],
+  lastArtifact: null
+};
+
+/* =========================================================================
+   DERIVATION
+   ========================================================================= */
+function confidenceOf(c, w) {
+  const base = { critical: 92, high: 78, medium: 62, low: 42 }[c.severity];
+  let score = base + (w.history - 0.5) * 10 + (w.policy - 1) * 6 + (w.amount - 0.5) * 8;
+  const baseBand = { critical: 4, high: 6, medium: 8, low: 10 }[c.severity];
+  const band = Math.max(3, Math.round(baseBand + (1 - w.amount) * 6));
+  return { score: Math.max(12, Math.min(97, Math.round(score))), band };
+}
+
+function filterCases() {
+  const scen = SCENARIOS[state.scenarioKey];
+  state.allCases = scen.cases.slice();
+  const withScores = state.allCases.map(c => ({ ...c, _conf: confidenceOf(c, state.weights) }));
+  state.filteredCases = withScores
+    .filter(c => state.serviceFilter === "all" || c.category === state.serviceFilter)
+    .filter(c => c._conf.score >= state.confidenceFilter)
+    .sort((a, b) => b._conf.score - a._conf.score);
+  if (!state.filteredCases.find(c => c.id === state.currentCaseId)) {
+    state.currentCaseId = state.filteredCases[0] ? state.filteredCases[0].id : null;
+  }
+}
+
+function currentCase() {
+  return state.filteredCases.find(c => c.id === state.currentCaseId) || state.filteredCases[0];
+}
+
+/* =========================================================================
+   FORMATTERS
+   ========================================================================= */
+const money = v => v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const moneyDetail = v => v.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function simpleHash(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return ("00000000" + (h >>> 0).toString(16)).slice(-8);
+}
+
+/* =========================================================================
+   RENDER: INBOX
+   ========================================================================= */
+function severityClass(score) {
+  if (score >= 80) return "";
+  if (score >= 60) return "medium";
+  return "low";
+}
+
+function renderInbox() {
+  const list = document.getElementById("inboxList");
+  const badge = document.getElementById("inboxBadge");
+  const sum = document.getElementById("filterSummary");
+  badge.textContent = `${state.filteredCases.length} of ${state.allCases.length}`;
+  sum.textContent = `${state.filteredCases.length} flagged`;
+
+  if (!state.filteredCases.length) {
+    list.innerHTML = `<div class="empty-state">No cases match the current filters.</div>`;
+    return;
+  }
+
+  list.innerHTML = state.filteredCases.map(c => {
+    const conf = c._conf;
+    const selected = c.id === state.currentCaseId;
+    return `
+      <button type="button" class="inbox-item ${selected ? "selected" : ""}" role="option" aria-selected="${selected}" data-id="${c.id}">
+        <div class="inbox-top">
+          <span class="inbox-vendor">${c.vendor}</span>
+          <span class="inbox-amount">${money(c.amount)}</span>
+        </div>
+        <div class="inbox-meta">
+          <span class="badge ${c.severity}">${c.severity}</span>
+          <span>${c.categoryLabel}</span>
+          <span class="dot-sep">·</span>
+          <span>${c.date}</span>
+        </div>
+        <div class="inbox-tags">
+          ${c.tags.map(t => `<span class="tag-chip">${t}</span>`).join("")}
+        </div>
+        <div class="inbox-bottom">
+          <div class="confidence-track" aria-label="Confidence ${conf.score} plus or minus ${conf.band}">
+            <div class="confidence-fill ${severityClass(conf.score)}" style="width:${conf.score}%"></div>
+            <div class="confidence-band" style="left:${Math.max(0, conf.score - conf.band)}%;width:${Math.min(100, conf.band * 2)}%"></div>
+          </div>
+          <div class="confidence-label">${conf.score}<span class="band-ref"> +/- ${conf.band}</span></div>
+        </div>
+      </button>
+    `;
+  }).join("");
+
+  list.querySelectorAll(".inbox-item").forEach(el => {
+    el.addEventListener("click", () => selectCase(el.dataset.id));
+  });
+}
+
+function selectCase(id) {
+  state.currentCaseId = id;
+  renderInbox();
+  renderCase();
+  renderTimeline();
+  renderCategory();
+  resetForm();
+}
+
+/* =========================================================================
+   RENDER: CASE
+   ========================================================================= */
+function renderCase() {
+  const c = currentCase();
+  if (!c) {
+    document.getElementById("caseHeading").textContent = "No case selected";
+    document.getElementById("caseSub").textContent = "Adjust filters to show at least one case.";
+    document.getElementById("caseAmount").textContent = "--";
+    document.getElementById("caseDelta").textContent = "";
+    document.getElementById("explanation").textContent = "";
+    return;
+  }
+
+  document.getElementById("caseHeading").textContent = c.vendor;
+  document.getElementById("caseSub").textContent = `${c.date}, ${c.categoryLabel}, flagged case ID ${c.id}`;
+  document.getElementById("caseAmount").textContent = moneyDetail(c.amount);
+
+  const ratio = c.baseline ? c.amount / c.baseline : 0;
+  document.getElementById("caseDelta").textContent =
+    !c.baseline ? "No prior vendor history"
+    : ratio >= 1.2 ? `${ratio.toFixed(1)}x vs 3 month average`
+    : ratio <= 0.8 ? `${(1 - ratio).toFixed(2)} below 3 month average`
+    : "Within 3 month average range";
+
+  const exp = c.reason
+    .replace(/3 month average/gi, '<span class="mention" data-mention="baseline" tabindex="0" role="button" aria-label="Highlight baseline">3 month average</span>')
+    .replace(/sigma/gi, '<span class="mention" data-mention="sigma" tabindex="0" role="button" aria-label="Highlight sigma band">sigma</span>')
+    .replace(/([Pp]olicy|[Aa]pprovals?)/g, '<span class="mention" data-mention="policy" tabindex="0" role="button" aria-label="Highlight policy">$1</span>');
+  document.getElementById("explanation").innerHTML = exp;
+
+  document.getElementById("evBaseline").textContent = c.baseline ? money(c.baseline) : "no prior";
+  document.getElementById("evSigma").textContent = c.sigma ? money(c.sigma) : "n/a";
+  document.getElementById("evBaselineValue").textContent = c.baseline ? money(c.baseline) : "new vendor";
+  document.getElementById("evCategory").textContent = c.categoryLabel;
+  document.getElementById("evCluster").textContent = c.baseline
+    ? `${money(c.baseline * 0.85)} to ${money(c.baseline * 1.55)}`
+    : "no peer band";
+  document.getElementById("evFitValue").textContent = c.severity === "low" ? "Within cohort" : "Outlier";
+  document.getElementById("evPolicy").textContent = c.policy;
+  const pvEl = document.getElementById("evPolicyValue");
+  pvEl.textContent = c.severity === "low" ? "Aligned" : "Attention";
+  pvEl.className = "value" + (c.severity === "low" ? " ok" : " alert");
+
+  renderGauge();
+  updateTrustCopy();
+}
+
+/* =========================================================================
+   RENDER: GAUGE
+   ========================================================================= */
+function renderGauge() {
+  const c = currentCase();
+  if (!c) return;
+  const { score, band } = confidenceOf(c, state.weights);
+  const svg = d3.select("#gauge");
+  svg.selectAll("*").remove();
+  svg.attr("viewBox", "0 0 200 200");
+
+  const cx = 100, cy = 118, r = 82;
+  const start = -Math.PI, end = 0;
+  const scale = d3.scaleLinear().domain([0, 100]).range([start, end]);
+
+  const arcBg = d3.arc().innerRadius(r - 16).outerRadius(r).startAngle(start).endAngle(end);
+  const arcFill = d3.arc().innerRadius(r - 16).outerRadius(r).startAngle(start).endAngle(scale(score));
+  const arcBand = d3.arc().innerRadius(r + 4).outerRadius(r + 9)
+    .startAngle(scale(Math.max(0, score - band)))
+    .endAngle(scale(Math.min(100, score + band)));
+
+  const g = svg.append("g").attr("transform", `translate(${cx},${cy})`);
+
+  g.append("path").attr("d", arcBg()).attr("fill", "#262A2D");
+  const fill = score >= 80 ? "#FFB4AB" : score >= 60 ? "#F7D17E" : "#8FD8A0";
+  g.append("path").attr("d", arcFill()).attr("fill", fill);
+  g.append("path").attr("d", arcBand()).attr("fill", fill).attr("opacity", 0.4);
+
+  // Tick marks + numeric labels
+  [0, 25, 50, 75, 100].forEach(t => {
+    const a = scale(t);
+    g.append("line")
+      .attr("x1", Math.cos(a) * (r - 20)).attr("y1", Math.sin(a) * (r - 20))
+      .attr("x2", Math.cos(a) * (r - 8)).attr("y2", Math.sin(a) * (r - 8))
+      .attr("stroke", "#C1C7C9").attr("stroke-width", 2);
+    g.append("text")
+      .attr("x", Math.cos(a) * (r - 32)).attr("y", Math.sin(a) * (r - 32))
+      .attr("text-anchor", "middle").attr("dominant-baseline", "central")
+      .attr("fill", "#C1C7C9").attr("font-size", 12).attr("font-weight", 600)
+      .attr("font-family", "Roboto Mono, monospace")
+      .text(t);
+  });
+
+  // Needle
+  const needleA = scale(score);
+  g.append("line")
+    .attr("x1", 0).attr("y1", 0)
+    .attr("x2", Math.cos(needleA) * (r - 24))
+    .attr("y2", Math.sin(needleA) * (r - 24))
+    .attr("stroke", fill).attr("stroke-width", 4).attr("stroke-linecap", "round");
+  g.append("circle").attr("cx", 0).attr("cy", 0).attr("r", 7).attr("fill", fill);
+  g.append("circle").attr("cx", 0).attr("cy", 0).attr("r", 3).attr("fill", "#101417");
+
+  const scoreEl = document.getElementById("trustScore");
+  scoreEl.textContent = score;
+  scoreEl.className = "value " + (score >= 80 ? "alert" : score >= 60 ? "warn" : "ok");
+  document.getElementById("trustBand").textContent = `+/- ${band}`;
+}
+
+function updateTrustCopy() {
+  const c = currentCase();
+  if (!c) return;
+  const { score } = confidenceOf(c, state.weights);
+  const copy = document.getElementById("trustCopy");
+  if (score >= 80) copy.textContent = "High risk at current weights. Further evidence recommended before approval.";
+  else if (score >= 60) copy.textContent = "Elevated risk. Verify at least one supporting signal before approving.";
+  else copy.textContent = "Low risk at current weights. Reviewer judgment carries greater weight than model.";
+}
+
+/* =========================================================================
+   RENDER: TIMELINE
+   ========================================================================= */
+function renderTimeline() {
+  const c = currentCase();
+  const svg = d3.select("#timelineChart");
+  svg.selectAll("*").remove();
+  if (!c) return;
+
+  const container = svg.node().parentNode;
+  const rect = container.getBoundingClientRect();
+  const width = rect.width || 800;
+  const height = 440;
+  svg.attr("viewBox", `0 0 ${width} ${height}`);
+
+  const margin = { top: 40, right: 40, bottom: 56, left: 80 };
+  const innerW = width - margin.left - margin.right;
+  const innerH = height - margin.top - margin.bottom;
+
+  const allValues = [...c.historical, c.amount];
+  const maxV = Math.max(...allValues, (c.baseline || 0) + (c.sigma || 0)) * 1.10 || 1;
+  const policyMult = [0.6, 0.85, 1.0][state.weights.policy];
+  const adjBaseline = c.baseline * policyMult;
+  const effSigma = c.sigma * (0.6 + (1 - state.weights.amount) * 0.9);
+
+  const labels = [...MONTH_LABELS, "Now"];
+  const x = d3.scaleBand().domain(labels).range([0, innerW]).padding(0.22);
+  const y = d3.scaleLinear().domain([0, maxV]).range([innerH, 0]).nice();
+
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+  // Grid
+  g.append("g").selectAll("line")
+    .data(y.ticks(5)).enter().append("line")
+    .attr("x1", 0).attr("x2", innerW)
+    .attr("y1", d => y(d)).attr("y2", d => y(d))
+    .attr("stroke", "rgba(193,199,201,0.12)")
+    .attr("stroke-width", 1);
+
+  // Sigma band
+  if (c.baseline) {
+    g.append("rect")
+      .attr("x", 0)
+      .attr("y", y(adjBaseline + effSigma))
+      .attr("width", innerW)
+      .attr("height", Math.max(0, y(adjBaseline - effSigma) - y(adjBaseline + effSigma)))
+      .attr("fill", "rgba(93,213,252,0.14)")
+      .attr("stroke", "rgba(93,213,252,0.45)")
+      .attr("stroke-width", 1.5)
+      .attr("stroke-dasharray", "5,4");
+  }
+
+  // Baseline line
+  if (c.baseline) {
+    g.append("line")
+      .attr("x1", 0).attr("x2", innerW)
+      .attr("y1", y(adjBaseline)).attr("y2", y(adjBaseline))
+      .attr("stroke", "#5DD5FC").attr("stroke-width", 3);
+
+    const blText = `Baseline ${money(adjBaseline)}`;
+    const blW = 168;
+    const blH = 24;
+    const blX = 4; // anchor on left, away from the flagged bar
+    const yb = y(adjBaseline);
+    // Prefer above the line, flip below if too close to top, clamp to plot
+    const above = yb - blH - 6;
+    const below = yb + 6;
+    const blY = Math.max(2, Math.min(innerH - blH - 2, above >= 2 ? above : below));
+    g.append("rect")
+      .attr("x", blX).attr("y", blY)
+      .attr("width", blW).attr("height", blH)
+      .attr("rx", 4).attr("fill", "#004D61").attr("opacity", 0.95);
+    g.append("text")
+      .attr("x", blX + blW / 2).attr("y", blY + blH / 2 + 1)
+      .attr("fill", "#B8EBFF").attr("font-size", 14).attr("font-weight", 600)
+      .attr("text-anchor", "middle").attr("dominant-baseline", "central")
+      .text(blText);
+  }
+
+  // Bars
+  const barData = labels.map((m, i) => ({
+    month: m,
+    value: i === labels.length - 1 ? c.amount : c.historical[i] || 0,
+    isFlagged: i === labels.length - 1
+  }));
+
+  g.selectAll("rect.bar")
+    .data(barData).enter().append("rect")
+    .attr("class", "bar")
+    .attr("x", d => x(d.month))
+    .attr("y", d => y(d.value))
+    .attr("width", x.bandwidth())
+    .attr("height", d => innerH - y(d.value))
+    .attr("rx", 6)
+    .attr("fill", d => d.isFlagged ? "#FFB4AB" : "#8FD8A0")
+    .attr("opacity", d => d.isFlagged ? 1 : 0.85)
+    .attr("stroke", d => d.isFlagged ? "#FFDAD6" : "none")
+    .attr("stroke-width", d => d.isFlagged ? 2 : 0);
+
+  // Error bar on flagged
+  const last = barData[barData.length - 1];
+  if (c.baseline) {
+    const cx = x(last.month) + x.bandwidth() / 2;
+    const topY = y(c.amount * 1.06);
+    const botY = y(c.amount * 0.94);
+    g.append("line").attr("x1", cx).attr("x2", cx).attr("y1", topY).attr("y2", botY).attr("stroke", "#FFB4AB").attr("stroke-width", 2.5);
+    g.append("line").attr("x1", cx - 10).attr("x2", cx + 10).attr("y1", topY).attr("y2", topY).attr("stroke", "#FFB4AB").attr("stroke-width", 2.5);
+    g.append("line").attr("x1", cx - 10).attr("x2", cx + 10).attr("y1", botY).attr("y2", botY).attr("stroke", "#FFB4AB").attr("stroke-width", 2.5);
+  }
+
+  // X axis
+  g.append("g")
+    .attr("transform", `translate(0,${innerH})`)
+    .selectAll("text.x")
+    .data(labels).enter().append("text")
+    .attr("class", "x")
+    .attr("x", d => x(d) + x.bandwidth() / 2)
+    .attr("y", 28).attr("text-anchor", "middle")
+    .attr("fill", d => d === "Current" ? "#FFB4AB" : "#C1C7C9")
+    .attr("font-size", 14)
+    .attr("font-weight", d => d === "Current" ? 700 : 500)
+    .attr("letter-spacing", "0.4px")
+    .text(d => d);
+
+  // Y axis
+  g.append("g").selectAll("text.y")
+    .data(y.ticks(5)).enter().append("text")
+    .attr("class", "y")
+    .attr("x", -14).attr("y", d => y(d))
+    .attr("dominant-baseline", "central").attr("text-anchor", "end")
+    .attr("fill", "#C1C7C9").attr("font-size", 13).attr("font-weight", 500)
+    .attr("font-family", "Roboto Mono, monospace")
+    .text(d => `$${(d / 1000).toFixed(d >= 10000 ? 0 : 1)}k`);
+
+  // Flagged annotation, clamp to plot area so it cannot clip edges
+  const cxF = x(last.month) + x.bandwidth() / 2;
+  const flaggedText = money(c.amount);
+  const fW = Math.max(92, flaggedText.length * 9 + 20);
+  const fH = 24;
+  const fLeft = Math.max(2, Math.min(innerW - fW - 2, cxF - fW / 2));
+  const fTopAbove = y(c.amount) - fH - 8;
+  const fTopBelow = y(c.amount) + 8;
+  const fTop = Math.max(2, Math.min(innerH - fH - 2, fTopAbove >= 2 ? fTopAbove : fTopBelow));
+  g.append("rect")
+    .attr("x", fLeft).attr("y", fTop)
+    .attr("width", fW).attr("height", fH)
+    .attr("rx", 4).attr("fill", "#93000A");
+  g.append("text")
+    .attr("x", fLeft + fW / 2).attr("y", fTop + fH / 2 + 1)
+    .attr("text-anchor", "middle").attr("dominant-baseline", "central")
+    .attr("fill", "#FFDAD6")
+    .attr("font-size", 14).attr("font-weight", 700)
+    .attr("font-family", "Roboto Mono, monospace")
+    .text(flaggedText);
+}
+
+/* =========================================================================
+   RENDER: CATEGORY FIT
+   ========================================================================= */
+function renderCategory() {
+  const c = currentCase();
+  const body = document.getElementById("categoryBody");
+  body.innerHTML = "";
+  if (!c) return;
+  c.peers.forEach(p => {
+    const row = document.createElement("div");
+    row.className = "cat-row";
+    row.innerHTML = `
+      <span class="name">${p.name}</span>
+      <div class="track"><div class="fill ${p.current ? "current" : ""}" style="width:${Math.round(p.fit * 100)}%"></div></div>
+      <span class="value">${p.fit.toFixed(2)}</span>
+    `;
+    body.appendChild(row);
+  });
+}
+
+/* =========================================================================
+   HIGHLIGHT LINKING
+   ========================================================================= */
+document.addEventListener("click", e => {
+  const h = e.target.closest(".mention");
+  if (!h) return;
+  document.querySelectorAll(".mention").forEach(m => m.classList.remove("active"));
+  h.classList.add("active");
+  const chart = d3.select("#timelineChart");
+  if (!chart.node()) return;
+  chart.selectAll(".bar").attr("stroke", null).attr("stroke-width", null);
+  const kind = h.dataset.mention;
+  if (kind === "baseline") {
+    chart.selectAll(".bar").filter(d => !d.isFlagged).attr("stroke", "#8FD8A0").attr("stroke-width", 1.6);
+  } else if (kind === "sigma") {
+    chart.selectAll("rect").filter(function() {
+      return d3.select(this).attr("fill") === "rgba(93,213,252,0.12)";
+    }).attr("fill", "rgba(93,213,252,0.24)");
+  } else if (kind === "policy") {
+    chart.selectAll(".bar").filter(d => d.isFlagged).attr("stroke", "#FFB4AB").attr("stroke-width", 2);
+  }
+});
+
+/* =========================================================================
+   DECISION FORM
+   ========================================================================= */
+function resetForm() {
+  state.decision = null;
+  state.attest = false;
+  state.notes = "";
+  document.getElementById("userNotes").value = "";
+  document.getElementById("attest").checked = false;
+  document.getElementById("attestRow").classList.remove("checked");
+  document.querySelectorAll(".decision-item").forEach(el => el.classList.remove("selected"));
+  document.querySelectorAll("input[name='decision']").forEach(r => r.checked = false);
+  updateRecordBtn();
+}
+
+function updateRecordBtn() {
+  const btn = document.getElementById("recordBtn");
+  btn.disabled = !(state.decision && state.attest && currentCase());
+}
+
+document.querySelectorAll(".decision-item").forEach(el => {
+  el.addEventListener("click", () => {
+    const value = el.dataset.decision;
+    state.decision = value;
+    const input = el.querySelector("input[type='radio']");
+    if (input) input.checked = true;
+    document.querySelectorAll(".decision-item").forEach(x => x.classList.remove("selected"));
+    el.classList.add("selected");
+    updateRecordBtn();
+  });
+});
+
+document.getElementById("attest").addEventListener("change", e => {
+  state.attest = e.target.checked;
+  document.getElementById("attestRow").classList.toggle("checked", state.attest);
+  updateRecordBtn();
+});
+
+document.getElementById("userNotes").addEventListener("input", e => {
+  state.notes = e.target.value;
+});
+
+document.getElementById("clearBtn").addEventListener("click", resetForm);
+document.getElementById("recordBtn").addEventListener("click", recordAction);
+
+/* =========================================================================
+   ARTIFACT + ACTIVITY
+   ========================================================================= */
+function recordAction() {
+  const c = currentCase();
+  if (!c || !state.decision) return;
+  const { score, band } = confidenceOf(c, state.weights);
+  const now = new Date();
+  const timeHuman = now.toLocaleString("en-US", { dateStyle: "full", timeStyle: "short" });
+  const timeShort = now.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  const hash = simpleHash(`${c.id}|${state.decision}|${score}|${band}|${JSON.stringify(state.weights)}|${now.toISOString()}`);
+  const verdict = { approve: "Approve", decline: "Decline and escalate", hold: "Hold for investigation" }[state.decision];
+  const policyLabels = ["Low", "Medium", "High"];
+
+  const sheet = document.getElementById("sheet");
+  sheet.classList.remove("empty");
+  sheet.innerHTML = `
+    <div class="sheet-top">
+      <h3>Audit record, ${c.id}</h3>
+      <div class="sheet-meta">${timeHuman}, hash ${hash}</div>
+    </div>
+    <h4>Transaction</h4>
+    <div class="sheet-grid">
+      <div><strong>Vendor:</strong> ${c.vendor}</div>
+      <div><strong>Amount:</strong> ${moneyDetail(c.amount)}</div>
+      <div><strong>Date:</strong> ${c.date}</div>
+      <div><strong>Category:</strong> ${c.categoryLabel}</div>
+    </div>
+    <h4>Model explanation at decision</h4>
+    <p>${c.reason}</p>
+    <h4>Decision weights</h4>
+    <div class="sheet-grid">
+      <div><strong>Vendor history:</strong> ${state.weights.history.toFixed(2)}</div>
+      <div><strong>Policy enforcement:</strong> ${policyLabels[state.weights.policy]}</div>
+      <div><strong>Amount sensitivity:</strong> ${state.weights.amount.toFixed(2)}</div>
+      <div><strong>Trust score:</strong> ${score} +/- ${band}</div>
+    </div>
+    <h4>Reviewer verdict</h4>
+    <p><strong>Verdict:</strong> ${verdict}</p>
+    <div class="sheet-notes">${state.notes ? escapeHtml(state.notes) : "No additional notes recorded."}</div>
+    <div class="sheet-foot">
+      <span class="sig">S. Mardovich, Controller, NA</span>
+      Attested at ${timeHuman}. Immutable. Control reference IT-C-04.
+    </div>
+  `;
+
+  document.getElementById("artifactBadge").textContent = `Recorded ${timeShort}`;
+
+  state.activity.unshift({
+    caseId: c.id, vendor: c.vendor, amount: c.amount,
+    score, band, decision: state.decision, verdict,
+    timeShort, hash
+  });
+  state.lastArtifact = { ...state.activity[0] };
+  renderActivity();
+  showSnack(`${verdict} recorded for ${c.vendor}.`);
+  resetForm();
+}
+
+function renderActivity() {
+  const log = document.getElementById("activityLog");
+  document.getElementById("activityBadge").textContent = `${state.activity.length} recorded`;
+  if (!state.activity.length) {
+    log.innerHTML = `<div class="empty-state">No activity yet. Record a verdict above to begin the trail.</div>`;
+    return;
+  }
+  log.innerHTML = state.activity.map(a => `
+    <div class="activity-row">
+      <span class="time">${a.timeShort}</span>
+      <span class="what"><b>${a.vendor}</b>, ${moneyDetail(a.amount)}, trust ${a.score} +/- ${a.band}, case ${a.caseId}, hash ${a.hash}</span>
+      <span class="verdict ${a.decision}">${a.verdict}</span>
+    </div>
+  `).join("");
+}
+
+/* =========================================================================
+   SNACKBAR
+   ========================================================================= */
+let snackTimer = null;
+function showSnack(text) {
+  const bar = document.getElementById("snackbar");
+  document.getElementById("snackbarText").textContent = text;
+  bar.classList.add("show");
+  clearTimeout(snackTimer);
+  snackTimer = setTimeout(() => bar.classList.remove("show"), 4200);
+}
+document.getElementById("snackbarAction").addEventListener("click", () => {
+  if (!state.lastArtifact) return;
+  state.activity.shift();
+  state.lastArtifact = null;
+  renderActivity();
+  const sheet = document.getElementById("sheet");
+  sheet.classList.add("empty");
+  sheet.innerHTML = `<div><span class="empty-icon"><span class="material-symbols-outlined">draft</span></span><div class="empty-title">No artifact yet</div><div class="empty-copy">Record a verdict to generate a signed, immutable audit record here.</div></div>`;
+  document.getElementById("artifactBadge").textContent = "Not yet recorded";
+  document.getElementById("snackbar").classList.remove("show");
+});
+
+/* =========================================================================
+   SLIDERS
+   ========================================================================= */
+document.getElementById("sliderHistory").addEventListener("input", e => {
+  state.weights.history = parseFloat(e.target.value);
+  document.getElementById("valHistory").textContent = e.target.value;
+  onWeights();
+});
+document.getElementById("sliderPolicy").addEventListener("input", e => {
+  state.weights.policy = parseInt(e.target.value, 10);
+  document.getElementById("valPolicy").textContent = ["Low","Medium","High"][state.weights.policy];
+  onWeights();
+});
+document.getElementById("sliderAmount").addEventListener("input", e => {
+  state.weights.amount = parseFloat(e.target.value);
+  document.getElementById("valAmount").textContent = e.target.value;
+  onWeights();
+});
+
+function onWeights() {
+  filterCases();
+  renderInbox();
+  renderGauge();
+  renderTimeline();
+  updateTrustCopy();
+}
+
+/* =========================================================================
+   SCENARIO + FILTERS
+   ========================================================================= */
+document.querySelectorAll(".segment").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".segment").forEach(b => {
+      b.classList.remove("selected");
+      b.setAttribute("aria-checked", "false");
+    });
+    btn.classList.add("selected");
+    btn.setAttribute("aria-checked", "true");
+    state.scenarioKey = btn.dataset.scenario;
+    state.currentCaseId = null;
+    filterCases();
+    renderAll();
+  });
+});
+
+function wireChip(chipId, menuId, attrKey, labelId, apply) {
+  const chip = document.getElementById(chipId);
+  const menu = document.getElementById(menuId);
+  const label = document.getElementById(labelId);
+  chip.addEventListener("click", e => {
+    e.stopPropagation();
+    document.querySelectorAll(".chip-menu").forEach(m => { if (m !== menu) m.classList.remove("open"); });
+    menu.classList.toggle("open");
+    chip.setAttribute("aria-expanded", menu.classList.contains("open"));
+  });
+  menu.querySelectorAll(".chip-menu-item").forEach(item => {
+    item.addEventListener("click", () => {
+      menu.querySelectorAll(".chip-menu-item").forEach(i => i.classList.remove("active"));
+      item.classList.add("active");
+      const val = item.dataset[attrKey];
+      apply(val, item.textContent.trim());
+      label.textContent = item.textContent.trim();
+      menu.classList.remove("open");
+      chip.setAttribute("aria-expanded", "false");
+    });
+  });
+}
+
+wireChip("serviceChip", "serviceMenu", "service", "serviceChipLabel", (val) => {
+  state.serviceFilter = val;
+  filterCases();
+  renderAll();
+});
+
+wireChip("confChip", "confMenu", "conf", "confChipLabel", (val) => {
+  state.confidenceFilter = parseInt(val, 10);
+  filterCases();
+  renderAll();
+});
+
+document.addEventListener("click", e => {
+  if (!e.target.closest(".chip-dropdown")) {
+    document.querySelectorAll(".chip-menu").forEach(m => m.classList.remove("open"));
+    document.querySelectorAll(".chip-dropdown .chip").forEach(c => c.setAttribute("aria-expanded", "false"));
+  }
+});
+
+document.getElementById("resetChip").addEventListener("click", () => {
+  state.serviceFilter = "all";
+  state.confidenceFilter = 70;
+  state.weights = { history: 0.70, policy: 2, amount: 0.85 };
+  document.getElementById("sliderHistory").value = 0.70;
+  document.getElementById("sliderPolicy").value = 2;
+  document.getElementById("sliderAmount").value = 0.85;
+  document.getElementById("valHistory").textContent = "0.70";
+  document.getElementById("valPolicy").textContent = "High";
+  document.getElementById("valAmount").textContent = "0.85";
+  document.getElementById("serviceChipLabel").textContent = "All lines";
+  document.getElementById("confChipLabel").textContent = "Confidence 70+";
+  document.querySelectorAll("#serviceMenu .chip-menu-item").forEach(i => i.classList.toggle("active", i.dataset.service === "all"));
+  document.querySelectorAll("#confMenu .chip-menu-item").forEach(i => i.classList.toggle("active", i.dataset.conf === "70"));
+  filterCases();
+  renderAll();
+});
+
+/* =========================================================================
+   KEYBOARD SHORTCUTS
+   ========================================================================= */
+document.addEventListener("keydown", e => {
+  if (e.target.matches("textarea, input[type='text'], select")) return;
+  if (typeof tour !== "undefined" && tour.open) return;
+  const list = state.filteredCases;
+  const idx = list.findIndex(c => c.id === state.currentCaseId);
+  if (e.key === "ArrowDown" || e.key === "j") {
+    if (list.length && idx < list.length - 1) { e.preventDefault(); selectCase(list[idx + 1].id); }
+  } else if (e.key === "ArrowUp" || e.key === "k") {
+    if (list.length && idx > 0) { e.preventDefault(); selectCase(list[idx - 1].id); }
+  } else if (["a","d","h"].includes(e.key.toLowerCase())) {
+    const map = { a: "approve", d: "decline", h: "hold" };
+    const val = map[e.key.toLowerCase()];
+    const el = document.querySelector(`.decision-item[data-decision="${val}"]`);
+    if (el) el.click();
+  }
+});
+
+/* =========================================================================
+   RESIZE
+   ========================================================================= */
+let resizeTimer;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { renderTimeline(); renderGauge(); }, 120);
+});
+
+/* =========================================================================
+   BOOT
+   ========================================================================= */
+function renderAll() {
+  renderInbox();
+  renderCase();
+  renderTimeline();
+  renderCategory();
+  renderActivity();
+}
+
+filterCases();
+renderAll();
+
+/* =========================================================================
+   GUIDED TOUR
+   ========================================================================= */
+const TOUR_STEPS = [
+  {
+    target: ".a-inbox",
+    title: "Start with a filtered queue",
+    path: "Exceptions sort by confidence, amount, and severity, so the most consequential case sits at the top. Use j and k to move, not a mouse.",
+    impact: "The inbox treats the reviewer's attention as the scarce resource. The order is opinionated but explicit, so drift is visible at a glance."
+  },
+  {
+    target: ".explanation",
+    title: "Read the grounded why",
+    path: "The model states why in reviewer language, with mentions linked to the exact evidence that triggered the flag. Click any highlighted term to trace it.",
+    impact: "Model reasoning is presented as a starting claim, not a verdict. Every word is traceable, which makes the model testable instead of taken on faith."
+  },
+  {
+    target: ".sliders",
+    title: "Tune the model, do not accept it",
+    path: "Shift weights for vendor history, policy enforcement, and amount sensitivity. The trust score and its band re-render live.",
+    impact: "The reviewer calibrates the decision at the moment of decision. Trust is produced in the room, not inherited from a training set."
+  },
+  {
+    target: ".score-readout",
+    title: "Uncertainty is part of the number",
+    path: "The score comes with a plus-minus band. The band widens as amount sensitivity drops and narrows as policy tightens.",
+    impact: "Showing uncertainty makes the reviewer confront confidence rather than defer to a single digit. A fragile 78 is different from a solid 78."
+  },
+  {
+    target: ".chart-frame",
+    title: "Cross-check the geometry",
+    path: "A 12-month timeline shows the adjusted baseline, the sigma band, and the current month with an error bar. The chart reflects the same weights as the score.",
+    impact: "Evidence is rendered as shape, not prose. A single glance can confirm or contradict the model's claim without reading a paragraph."
+  },
+  {
+    target: ".a-decision",
+    title: "Verdict with attestation",
+    path: "Pick a verdict by click or shortcut (A, D, H). Add a reviewer note. Attest that the verdict reflects the judgment at the captured weights.",
+    impact: "Attestation sits in the same frame as the evidence, not on a separate form later. The reviewer cannot be narrated into a decision they did not make."
+  },
+  {
+    target: ".a-artifact",
+    title: "Immutable audit record",
+    path: "On record, a signed sheet is generated with the case, weights, score, explanation, verdict, reviewer note, and a hash of the exact state.",
+    impact: "Audit is a first-class output of the review, not a side effect. Every decision is replayable under the precise conditions that produced it."
+  }
+];
+
+const tour = {
+  idx: 0,
+  open: false,
+  root: document.getElementById("tourRoot"),
+  hi: document.getElementById("tourHighlight"),
+  pop: document.getElementById("tourPopover"),
+  dots: document.getElementById("tourDots")
+};
+
+function tourRenderDots() {
+  tour.dots.innerHTML = "";
+  TOUR_STEPS.forEach((_, i) => {
+    const d = document.createElement("span");
+    d.className = "tour-dot" + (i === tour.idx ? " active" : i < tour.idx ? " done" : "");
+    tour.dots.appendChild(d);
+  });
+}
+
+function tourPositionFor(target) {
+  if (!target) return null;
+  const el = typeof target === "string" ? document.querySelector(target) : target;
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { el, r };
+}
+
+function tourPlace(step) {
+  const pos = tourPositionFor(step.target);
+  if (!pos) return;
+  const { el, r } = pos;
+
+  // Scroll target into a comfortable viewport position
+  const needsScroll = r.top < 120 || r.bottom > window.innerHeight - 120;
+  if (needsScroll) {
+    el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+  }
+
+  // Wait one frame for scroll, then measure again
+  requestAnimationFrame(() => {
+    const rr = el.getBoundingClientRect();
+    const pad = 10;
+    const top = Math.max(8, rr.top - pad);
+    const left = Math.max(8, rr.left - pad);
+    const width = Math.min(window.innerWidth - left - 8, rr.width + pad * 2);
+    const height = Math.min(window.innerHeight - top - 8, rr.height + pad * 2);
+
+    tour.hi.style.top = top + "px";
+    tour.hi.style.left = left + "px";
+    tour.hi.style.width = width + "px";
+    tour.hi.style.height = height + "px";
+
+    // Popover placement, pick the side with most room
+    const popW = Math.min(380, window.innerWidth - 32);
+    const popH = tour.pop.getBoundingClientRect().height || 320;
+    const gap = 16;
+
+    const rightSpace = window.innerWidth - (left + width) - gap;
+    const leftSpace = left - gap;
+    const belowSpace = window.innerHeight - (top + height) - gap;
+    const aboveSpace = top - gap;
+
+    let pTop, pLeft;
+    if (rightSpace >= popW) {
+      pLeft = left + width + gap;
+      pTop = Math.min(Math.max(8, top), window.innerHeight - popH - 8);
+    } else if (leftSpace >= popW) {
+      pLeft = left - gap - popW;
+      pTop = Math.min(Math.max(8, top), window.innerHeight - popH - 8);
+    } else if (belowSpace >= popH + 40) {
+      pTop = top + height + gap;
+      pLeft = Math.min(Math.max(16, left), window.innerWidth - popW - 16);
+    } else if (aboveSpace >= popH + 40) {
+      pTop = top - gap - popH;
+      pLeft = Math.min(Math.max(16, left), window.innerWidth - popW - 16);
+    } else {
+      // Center fallback
+      pTop = Math.max(16, (window.innerHeight - popH) / 2);
+      pLeft = Math.max(16, (window.innerWidth - popW) / 2);
+    }
+
+    tour.pop.style.top = pTop + "px";
+    tour.pop.style.left = pLeft + "px";
+  });
+}
+
+function tourRender() {
+  const step = TOUR_STEPS[tour.idx];
+  document.getElementById("tourStepCount").textContent =
+    `Step ${tour.idx + 1} of ${TOUR_STEPS.length}`;
+  document.getElementById("tourTitle").textContent = step.title;
+  document.getElementById("tourPath").textContent = step.path;
+  document.getElementById("tourImpact").textContent = step.impact;
+
+  document.getElementById("tourBack").disabled = tour.idx === 0;
+  const nextBtn = document.getElementById("tourNext");
+  nextBtn.innerHTML = tour.idx === TOUR_STEPS.length - 1
+    ? 'Finish <span class="material-symbols-outlined" style="font-size:18px;">check</span>'
+    : 'Next <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>';
+
+  tourRenderDots();
+  tourPlace(step);
+}
+
+function tourStart() {
+  tour.open = true;
+  tour.idx = 0;
+  document.body.classList.add("tour-active");
+  tourRender();
+  setTimeout(() => document.getElementById("tourNext").focus(), 50);
+}
+
+function tourEnd() {
+  tour.open = false;
+  document.body.classList.remove("tour-active");
+}
+
+function tourNext() {
+  if (tour.idx >= TOUR_STEPS.length - 1) return tourEnd();
+  tour.idx += 1;
+  tourRender();
+}
+
+function tourBack() {
+  if (tour.idx === 0) return;
+  tour.idx -= 1;
+  tourRender();
+}
+
+document.getElementById("tourBtn").addEventListener("click", tourStart);
+document.getElementById("tourClose").addEventListener("click", tourEnd);
+document.getElementById("tourSkip").addEventListener("click", tourEnd);
+document.getElementById("tourBack").addEventListener("click", tourBack);
+document.getElementById("tourNext").addEventListener("click", tourNext);
+
+document.addEventListener("keydown", e => {
+  if (!tour.open) return;
+  if (e.key === "Escape") { e.preventDefault(); tourEnd(); }
+  else if (e.key === "ArrowRight" || e.key === "Enter") { e.preventDefault(); tourNext(); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); tourBack(); }
+}, true);
+
+window.addEventListener("resize", () => {
+  if (tour.open) tourPlace(TOUR_STEPS[tour.idx]);
+});
+
+window.addEventListener("scroll", () => {
+  if (tour.open) tourPlace(TOUR_STEPS[tour.idx]);
+}, true);
+</script>
+</body>
+<script>'undefined'=== typeof _trfq || (window._trfq = []);'undefined'=== typeof _trfd && (window._trfd=[]),_trfd.push({'tccl.baseHost':'secureserver.net'},{'ap':'cpsh-oh'},{'server':'p3plzcpnl504863'},{'dcenter':'p3'},{'cp_id':'10904367'},{'cp_cl':'8'}) // Monitoring performance to make your website faster. If you want to opt-out, please contact web hosting support.</script><script src='https://img1.wsimg.com/traffic-assets/js/tccl.min.js'></script></html>

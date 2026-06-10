@@ -1,1 +1,4123 @@
-<!doctype html><meta charset="utf-8"><title>volatility-surface</title><p>Prototype source pending. Live case study: <a href="https://siarheimardovich.com/volatility-surface/">siarheimardovich.com/volatility-surface/</a></p>
+<!--
+  Option Settlement Trading Workspace — Mercantile Exchange OSTL
+  Based on design work done for a mercantile exchange via EPAM Systems, 2015.
+  Original data model from archive surface.js (36x36 grid, attributed to V. Kozyrev).
+  Workflow model from original storyboard (00-Storyboard.png) and use-case wireframes.
+  Rebuilt for portfolio: IBM Carbon g100, Three.js r165, single-file HTML.
+  This is a portfolio reconstruction, not the original product.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Option Settlement Workspace</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; }
+
+    :root {
+      --cds-background:       #161616;
+      --cds-layer:            #262626;
+      --cds-layer-01:         #262626;
+      --cds-layer-02:         #393939;
+      --cds-layer-03:         #525252;
+      --cds-border-subtle:    #393939;
+      --cds-border-strong:    #6f6f6f;
+      --cds-border-inverse:   #f4f4f4;
+
+      --cds-text-primary:     #f4f4f4;
+      --cds-text-secondary:   #c6c6c6;
+      --cds-text-placeholder: #6f6f6f;
+      --cds-text-disabled:    #525252;
+      --cds-text-on-color:    #ffffff;
+      --cds-text-inverse:     #161616;
+      --cds-text-helper:      #a8a8a8;
+
+      --cds-interactive:      #4589ff;
+      --cds-focus:            #4589ff;
+      --cds-button-primary:   #0f62fe;
+      --cds-button-primary-hover: #0353e9;
+      --cds-link-primary:     #78a9ff;
+      --cds-link-visited:     #be95ff;
+
+      --cds-support-error:    #fa4d56;
+      --cds-support-warning:  #f1c21b;
+      --cds-support-success:  #42be65;
+      --cds-support-info:     #4589ff;
+
+      --spread-cool:          #4589ff;
+      --spread-warm:          #f1c21b;
+      --spread-hot:           #fa4d56;
+      --slice-accent:         #be95ff;
+      --grid-subtle:          #393939;
+      --violation:            #fa4d56;
+      --previous-value:       #525252;
+      --pinned-stripe:        #0f62fe;
+
+      --font-sans:  'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono:  'IBM Plex Mono', 'Courier New', monospace;
+    }
+
+    body {
+      overflow: hidden;
+      background: var(--cds-background);
+      color: var(--cds-text-primary);
+      font-family: var(--font-sans);
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    #app-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      height: 48px;
+      padding: 0 16px;
+      background: rgba(22,22,22,0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--cds-border-subtle);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 16px;
+    }
+
+    #tab-nav {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      height: 48px;
+      justify-self: center;
+    }
+
+    .app-tab {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--cds-text-placeholder);
+      padding: 0 16px;
+      height: 48px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 500;
+      transition: color 0.15s, border-color 0.15s;
+      position: relative;
+    }
+
+    .app-tab:hover { color: var(--cds-text-secondary); }
+    .app-tab.active {
+      color: var(--cds-text-primary);
+      border-bottom-color: var(--cds-interactive);
+    }
+
+    #panel-container {
+      position: fixed;
+      inset: 48px 0 36px;
+      overflow: hidden;
+    }
+
+    .panel {
+      display: none;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      animation: panel-fade 0.2s ease;
+    }
+
+    .panel.active { display: block; }
+
+    @keyframes panel-fade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .panel-sheet {
+      width: 100%;
+      height: 100%;
+      padding: 22px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      background:
+        radial-gradient(circle at top left, rgba(69,137,255,0.10), transparent 28%),
+        linear-gradient(180deg, rgba(38,38,38,0.72) 0%, rgba(22,22,22,0.94) 100%);
+    }
+
+    .panel-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 40px;
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--cds-text-primary);
+    }
+
+    .panel-subtitle {
+      font-size: 12px;
+      color: var(--cds-text-secondary);
+      line-height: 1.5;
+    }
+
+    .button-primary,
+    .button-secondary,
+    .button-ghost {
+      min-height: 32px;
+      padding: 0 14px;
+      border-radius: 2px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .button-primary {
+      background: var(--cds-button-primary);
+      color: #fff;
+      border: none;
+    }
+
+    .button-primary:hover {
+      background: var(--cds-button-primary-hover);
+    }
+
+    .button-secondary {
+      background: transparent;
+      border: 1px solid var(--cds-border-strong);
+      color: var(--cds-text-secondary);
+    }
+
+    .button-secondary:hover,
+    .button-ghost:hover {
+      color: var(--cds-text-primary);
+      border-color: var(--cds-text-secondary);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .button-ghost {
+      background: transparent;
+      border: none;
+      color: var(--cds-link-primary);
+      padding: 0;
+      min-height: auto;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--cds-layer-02);
+      border: 1px solid var(--cds-border-subtle);
+      border-radius: 2px;
+      padding: 2px 8px;
+      font-size: 12px;
+      color: var(--cds-text-secondary);
+    }
+
+    #panel-surface {
+      position: relative;
+      background: linear-gradient(180deg, rgba(28,28,28,0.9) 0%, rgba(22,22,22,1) 100%);
+    }
+
+    #three-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .surface-card {
+      position: absolute;
+      z-index: 2;
+      background: rgba(38,38,38,0.9);
+      border: 1px solid var(--cds-border-subtle);
+      border-radius: 2px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    #surface-claim {
+      top: 20px;
+      left: 20px;
+      width: min(420px, calc(100% - 40px));
+      padding: 14px 16px;
+    }
+
+    #surface-claim h2 {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cds-link-primary);
+      margin-bottom: 8px;
+      font-family: var(--font-mono);
+    }
+
+    #surface-claim p {
+      font-size: 13px;
+      line-height: 1.58;
+      color: var(--cds-text-secondary);
+    }
+
+    #surface-controls {
+      position: absolute;
+      left: 20px;
+      bottom: 20px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    #surface-action {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      z-index: 2;
+    }
+
+    .mode-switch {
+      display: flex;
+      border: 1px solid var(--cds-border-subtle);
+      border-radius: 2px;
+      overflow: hidden;
+      background: var(--cds-layer-01);
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--cds-text-secondary);
+      padding: 7px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+    }
+
+    .mode-btn:hover { background: var(--cds-layer-02); }
+    .mode-btn.active {
+      background: var(--cds-button-primary);
+      color: #fff;
+    }
+
+    .surface-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--cds-border-subtle);
+      flex-shrink: 0;
+    }
+
+    .cds-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+
+    .toggle-track {
+      width: 32px;
+      height: 16px;
+      border-radius: 8px;
+      background: #525252;
+      position: relative;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .toggle-track.active { background: var(--cds-button-primary); }
+
+    .toggle-thumb {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #c6c6c6;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: left 0.15s, background 0.15s;
+    }
+
+    .toggle-thumb.on {
+      left: 18px;
+      background: #fff;
+    }
+
+    .toggle-label {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--cds-text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .surface-slider-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 260px;
+    }
+
+    .surface-slider-group input[type="range"] {
+      width: 150px;
+      accent-color: var(--slice-accent);
+    }
+
+    .surface-mini-stat {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--cds-border-subtle);
+      border-radius: 2px;
+      background: rgba(22,22,22,0.42);
+    }
+
+    .surface-mini-stat span:first-child {
+      color: var(--cds-text-placeholder);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+    }
+
+    .surface-mini-stat strong {
+      color: var(--cds-text-primary);
+      font-size: 12px;
+      font-family: var(--font-mono);
+      font-weight: 500;
+    }
+
+    .chart-shell,
+    .table-shell,
+    .spread-shell,
+    .strategy-shell {
+      flex: 1;
+      min-height: 0;
+      background: rgba(38,38,38,0.78);
+      border: 1px solid var(--cds-border-subtle);
+      border-radius: 2px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #slice-chart-shell {
+      padding: 14px;
+      background:
+        linear-gradient(180deg, rgba(190,149,255,0.05), transparent 35%),
+        rgba(38,38,38,0.96);
+    }
+
+    #slice-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      min-height: 420px;
+    }
+
+    .panel-subfooter {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--cds-text-placeholder);
+      font-size: 12px;
+    }
+
+    .panel-subfooter .spacer {
+      flex: 1;
+    }
+
+    .inline-legend {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--cds-text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .inline-legend i {
+      width: 14px;
+      height: 2px;
+      display: inline-block;
+      border-radius: 999px;
+    }
+
+    .table-toolbar-actions,
+    .spread-toolbar-actions,
+    .strategy-toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+
+    .table-scroll,
+    .spread-table-scroll,
+    .strategy-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .data-table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: var(--cds-layer);
+    }
+
+    .data-table th,
+    .data-table td {
+      border-right: 1px solid var(--cds-border-subtle);
+      border-bottom: 1px solid var(--cds-border-subtle);
+      padding: 10px 8px;
+      text-align: right;
+      font-size: 12px;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .data-table th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: var(--cds-layer-02);
+      color: var(--cds-text-secondary);
+      font-weight: 500;
+    }
+
+    .data-table th.row-head {
+      left: 0;
+      z-index: 4;
+      min-width: 78px;
+      text-align: left;
+      background: #323232;
+    }
+
+    .data-table td.row-head {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      text-align: left;
+      background: var(--cds-layer-01);
+      color: var(--cds-text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .data-table td {
+      color: var(--cds-text-primary);
+      cursor: pointer;
+      transition: box-shadow 0.15s, background 0.15s;
+    }
+
+    .data-table td:hover {
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+    }
+
+    .data-table td.active-slice::before,
+    .data-table th.active-slice::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 2px;
+      background: var(--slice-accent);
+    }
+
+    .data-table td.pinned::after,
+    .data-table th.pinned::after {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      background: var(--pinned-stripe);
+    }
+
+    .data-table td.selected {
+      box-shadow: inset 0 0 0 2px rgba(190,149,255,0.62);
+    }
+
+    .violation-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--violation);
+      display: inline-block;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .violation-cell {
+      color: var(--violation) !important;
+    }
+
+    .columns-menu {
+      position: absolute;
+      top: 64px;
+      right: 24px;
+      z-index: 10;
+      width: 260px;
+      max-height: 360px;
+      overflow: auto;
+      background: var(--cds-layer-02);
+      border: 1px solid var(--cds-border-strong);
+      border-radius: 2px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.48);
+      padding: 8px;
+      display: none;
+    }
+
+    .columns-menu.open { display: block; }
+
+    .columns-menu label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 8px;
+      font-size: 12px;
+      color: var(--cds-text-secondary);
+    }
+
+    .columns-menu label:hover {
+      background: rgba(255,255,255,0.04);
+    }
+
+    .spread-table,
+    .strategy-metrics {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .spread-table th,
+    .spread-table td {
+      border-bottom: 1px solid var(--cds-border-subtle);
+      padding: 12px 10px;
+      text-align: left;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .spread-table th {
+      position: sticky;
+      top: 0;
+      background: var(--cds-layer-02);
+      z-index: 2;
+      color: var(--cds-text-secondary);
+      font-weight: 500;
+    }
+
+    .spread-table td.numeric {
+      font-family: var(--font-mono);
+      text-align: right;
+    }
+
+    .spread-editable {
+      background: transparent;
+      border: 1px solid transparent;
+      color: inherit;
+      padding: 4px 6px;
+      border-radius: 2px;
+      width: 100%;
+      text-align: right;
+      font-family: var(--font-mono);
+    }
+
+    .spread-editable:hover {
+      border-color: rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .spread-input {
+      width: 100%;
+      padding: 5px 6px;
+      border-radius: 2px;
+      border: 1px solid var(--cds-focus);
+      background: #1f1f1f;
+      color: var(--cds-text-primary);
+      text-align: right;
+      font-family: var(--font-mono);
+    }
+
+    .spread-previous {
+      display: inline-block;
+      margin-left: 6px;
+      color: var(--previous-value);
+      font-size: 11px;
+    }
+
+    .spread-row.selected {
+      background: rgba(190,149,255,0.08);
+    }
+
+    .spread-row.violation-row {
+      background: rgba(250,77,86,0.08);
+    }
+
+    .inspector {
+      border-top: 1px solid var(--cds-border-subtle);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: rgba(22,22,22,0.42);
+      min-height: 92px;
+    }
+
+    .inspector-label {
+      font-size: 11px;
+      color: var(--cds-text-placeholder);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-family: var(--font-mono);
+    }
+
+    .inspector strong {
+      color: var(--cds-text-primary);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .inspector p {
+      font-size: 12px;
+      color: var(--cds-text-secondary);
+      line-height: 1.45;
+    }
+
+    .inspector p.error {
+      color: var(--cds-support-error);
+    }
+
+    .strategy-scroll {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .strategy-card {
+      border: 1px solid var(--cds-border-subtle);
+      background: rgba(22,22,22,0.42);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .strategy-card-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .strategy-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--cds-text-primary);
+    }
+
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(108px, 152px));
+      justify-content: start;
+      gap: 12px 14px;
+    }
+
+    .strategy-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-width: 152px;
+    }
+
+    .strategy-field label {
+      font-size: 11px;
+      color: var(--cds-text-placeholder);
+      font-family: var(--font-mono);
+    }
+
+    .strategy-field select,
+    .strategy-field input {
+      min-height: 36px;
+      background: var(--cds-layer-01);
+      border: 1px solid var(--cds-border-subtle);
+      color: var(--cds-text-primary);
+      padding: 0 10px;
+      border-radius: 2px;
+    }
+
+    .strategy-qty {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .strategy-qty button {
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--cds-border-subtle);
+      background: transparent;
+      color: var(--cds-text-secondary);
+      border-radius: 2px;
+    }
+
+    .strategy-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .strategy-metric {
+      border: 1px solid var(--cds-border-subtle);
+      background: rgba(255,255,255,0.02);
+      padding: 10px;
+      border-radius: 2px;
+    }
+
+    .strategy-metric span {
+      display: block;
+      font-size: 11px;
+      color: var(--cds-text-placeholder);
+      margin-bottom: 6px;
+      font-family: var(--font-mono);
+    }
+
+    .strategy-metric strong {
+      font-size: 13px;
+      color: var(--cds-text-primary);
+      font-weight: 500;
+    }
+
+    .strategy-summary {
+      border-top: 1px solid var(--cds-border-subtle);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: rgba(22,22,22,0.44);
+    }
+
+    .strategy-summary strong {
+      color: var(--cds-text-primary);
+      font-weight: 600;
+    }
+
+    .strategy-summary .summary-metric {
+      font-size: 12px;
+      color: var(--cds-text-secondary);
+    }
+
+    .strategy-summary .summary-metric span {
+      color: var(--cds-text-placeholder);
+    }
+
+    #context-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 40;
+      height: 36px;
+      padding: 0 16px;
+      background: rgba(22,22,22,0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--cds-border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 11px;
+      color: var(--cds-text-placeholder);
+      font-family: var(--font-mono);
+    }
+
+    .data-tooltip {
+      display: none;
+      position: fixed;
+      z-index: 60;
+      pointer-events: none;
+      background: rgba(38,38,38,0.97);
+      border: 1px solid var(--cds-border-strong);
+      border-radius: 2px;
+      padding: 10px 12px;
+      min-width: 170px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.55);
+    }
+
+    .data-tooltip .title {
+      font-size: 11px;
+      color: var(--cds-text-placeholder);
+      margin-bottom: 6px;
+    }
+
+    .data-tooltip .rows {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 12px;
+      font-size: 12px;
+    }
+
+    .data-tooltip .rows span:nth-child(odd) {
+      color: var(--cds-text-placeholder);
+    }
+
+    #surface-tooltip .rows span:nth-child(even) {
+      font-family: var(--font-mono);
+      font-weight: 500;
+    }
+
+    #surface-tooltip-iv {
+      color: var(--slice-accent);
+    }
+
+    #surface-tooltip-bid {
+      color: var(--cds-support-success);
+    }
+
+    #surface-tooltip-ask {
+      color: var(--cds-support-error);
+    }
+
+    #surface-tooltip-spread {
+      color: var(--cds-support-warning);
+    }
+
+    #tour-tooltip {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      background: var(--cds-layer-02);
+      border: 1px solid var(--cds-border-strong);
+      border-radius: 4px;
+      padding: 16px 20px;
+      max-width: 360px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      transform: translateY(8px);
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    #tour-tooltip.open {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #tour-tooltip.intro-step.open {
+      animation: tour-intro-pop 0.58s cubic-bezier(0.18, 0.9, 0.28, 1.18);
+      box-shadow: 0 18px 56px rgba(0,0,0,0.72);
+    }
+
+    .tour-highlight {
+      outline: 2px solid var(--cds-interactive) !important;
+      outline-offset: 4px;
+      border-radius: 2px;
+      animation: tour-pulse 1.8s ease-in-out infinite;
+    }
+
+    .tour-highlight-intro {
+      outline-width: 3px !important;
+      box-shadow:
+        0 0 0 1px rgba(69,137,255,0.32),
+        0 0 42px rgba(69,137,255,0.22),
+        inset 0 0 28px rgba(69,137,255,0.08);
+      animation: tour-pulse-intro 1.3s ease-in-out infinite;
+    }
+
+    @keyframes tour-pulse {
+      0%, 100% { outline-color: var(--cds-interactive); }
+      50% { outline-color: var(--cds-support-success); }
+    }
+
+    @keyframes tour-intro-pop {
+      0% {
+        opacity: 0;
+        transform: translateY(24px) scale(0.88);
+      }
+      58% {
+        opacity: 1;
+        transform: translateY(-6px) scale(1.035);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes tour-pulse-intro {
+      0%, 100% {
+        outline-color: rgba(69,137,255,0.98);
+        box-shadow:
+          0 0 0 1px rgba(69,137,255,0.28),
+          0 0 28px rgba(69,137,255,0.18),
+          inset 0 0 18px rgba(69,137,255,0.06);
+      }
+      50% {
+        outline-color: rgba(120,169,255,1);
+        box-shadow:
+          0 0 0 1px rgba(120,169,255,0.38),
+          0 0 54px rgba(120,169,255,0.28),
+          inset 0 0 34px rgba(120,169,255,0.12);
+      }
+    }
+
+    #toast-stack {
+      position: fixed;
+      right: 20px;
+      bottom: 52px;
+      z-index: 90;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      min-width: 260px;
+      padding: 12px 14px;
+      border-radius: 2px;
+      border: 1px solid var(--cds-border-strong);
+      background: rgba(38,38,38,0.96);
+      color: var(--cds-text-primary);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.42);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .toast.success { border-color: rgba(66,190,101,0.55); }
+    .toast.error { border-color: rgba(250,77,86,0.55); }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1180px) {
+      #surface-claim {
+        width: min(360px, calc(100% - 40px));
+      }
+
+      .strategy-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      #surface-controls {
+        flex-wrap: wrap;
+        max-width: calc(100% - 40px);
+      }
+    }
+
+    @media (max-width: 860px) {
+      #app-header {
+        padding: 0 12px;
+        gap: 10px;
+      }
+
+      .app-tab {
+        padding: 0 10px;
+      }
+
+      .panel-sheet {
+        padding: 16px;
+      }
+
+      #surface-claim {
+        position: relative;
+        top: auto;
+        left: auto;
+        width: calc(100% - 32px);
+      }
+
+      #surface-controls,
+      #surface-action {
+        left: 16px;
+        right: 16px;
+      }
+
+      #surface-action {
+        bottom: 94px;
+      }
+
+      .strategy-grid,
+      .strategy-metrics {
+        grid-template-columns: 1fr;
+      }
+
+      #context-bar {
+        gap: 10px;
+        padding: 0 12px;
+      }
+    }
+
+    /* Enterprise workspace overrides */
+
+    #app-shell {
+      position: fixed;
+      inset: 48px 0 36px;
+      display: grid;
+      grid-template-columns: 308px minmax(0, 1fr);
+      background:
+        radial-gradient(circle at top left, rgba(69,137,255,0.10), transparent 22%),
+        linear-gradient(180deg, rgba(32,32,32,0.95) 0%, rgba(16,16,16,1) 100%);
+    }
+
+    #workspace-rail {
+      min-width: 0;
+      min-height: 0;
+      overflow: auto;
+      padding: 18px 16px;
+      border-right: 1px solid var(--cds-border-subtle);
+      background:
+        linear-gradient(180deg, rgba(38,38,38,0.96) 0%, rgba(22,22,22,0.98) 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    #workspace-main {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background:
+        linear-gradient(180deg, rgba(32,32,32,0.24) 0%, rgba(22,22,22,0.54) 100%);
+    }
+
+    #panel-container {
+      position: relative;
+      inset: auto;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      background: rgba(22,22,22,0.88);
+    }
+
+    .app-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 14px;
+    }
+
+    .app-tab::before {
+      content: attr(data-step);
+      font-size: 10px;
+      color: var(--cds-text-disabled);
+      font-family: var(--font-mono);
+      letter-spacing: 0.08em;
+    }
+
+    .app-tab.active::before {
+      color: var(--cds-link-primary);
+    }
+
+    .rail-label,
+    .card-eyebrow {
+      font-size: 10px;
+      color: var(--cds-text-placeholder);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-family: var(--font-mono);
+    }
+
+    .rail-label {
+      color: var(--cds-link-primary);
+    }
+
+    .rail-card,
+    .insight-card {
+      border: 1px solid var(--cds-border-subtle);
+      background:
+        linear-gradient(180deg, rgba(57,57,57,0.48) 0%, rgba(38,38,38,0.92) 100%);
+      border-radius: 2px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .rail-card-flex {
+      flex: 1;
+      min-height: 180px;
+    }
+
+    .rail-field-label,
+    .insight-label {
+      font-size: 11px;
+      color: var(--cds-text-placeholder);
+      font-family: var(--font-mono);
+    }
+
+    .rail-title {
+      font-size: 16px;
+      line-height: 1.3;
+      font-weight: 600;
+      color: var(--cds-text-primary);
+    }
+
+    .rail-copy,
+    .insight-copy {
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--cds-text-secondary);
+    }
+
+    .enterprise-select,
+    .strategy-field select,
+    .strategy-field input {
+      min-height: 36px;
+      width: 100%;
+      border-radius: 2px;
+      border: 1px solid var(--cds-border-subtle);
+      background: rgba(22,22,22,0.84);
+      color: var(--cds-text-primary);
+      padding: 0 12px;
+    }
+
+    .mini-metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .mini-metric {
+      border: 1px solid rgba(255,255,255,0.05);
+      background: rgba(8,8,8,0.18);
+      padding: 9px 10px;
+      border-radius: 2px;
+    }
+
+    .mini-metric span {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 10px;
+      color: var(--cds-text-placeholder);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-family: var(--font-mono);
+    }
+
+    .mini-metric strong {
+      display: block;
+      font-size: 13px;
+      color: var(--cds-text-primary);
+      font-weight: 600;
+    }
+
+    .mini-metric.warn strong { color: var(--cds-support-warning); }
+    .mini-metric.alert strong { color: var(--cds-support-error); }
+    .mini-metric.info strong { color: var(--cds-link-primary); }
+    .mini-metric.good strong { color: var(--cds-support-success); }
+
+    .workflow-list,
+    .watchlist-list,
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .workflow-step,
+    .watchlist-item,
+    .activity-item {
+      border: 1px solid rgba(255,255,255,0.04);
+      background: rgba(8,8,8,0.18);
+      border-radius: 2px;
+      padding: 10px 11px;
+    }
+
+    .workflow-step {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: 10px;
+      text-align: left;
+      color: inherit;
+      width: 100%;
+      border-radius: 2px;
+    }
+
+    .workflow-step .step-index {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--cds-border-strong);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: var(--cds-text-helper);
+      font-family: var(--font-mono);
+    }
+
+    .workflow-step strong,
+    .watchlist-item strong,
+    .activity-item strong {
+      display: block;
+      font-size: 12px;
+      color: var(--cds-text-primary);
+    }
+
+    .workflow-step span,
+    .watchlist-item span,
+    .activity-item span {
+      display: block;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--cds-text-secondary);
+    }
+
+    .workflow-step.done {
+      border-color: rgba(66,190,101,0.22);
+    }
+
+    .workflow-step.done .step-index {
+      border-color: rgba(66,190,101,0.48);
+      color: var(--cds-support-success);
+    }
+
+    .workflow-step.active {
+      border-color: rgba(69,137,255,0.42);
+      background: rgba(15,98,254,0.10);
+    }
+
+    .workflow-step.active .step-index {
+      border-color: rgba(69,137,255,0.58);
+      color: var(--cds-link-primary);
+    }
+
+    .watchlist-item {
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .watchlist-item:hover {
+      border-color: rgba(120,169,255,0.32);
+      background: rgba(69,137,255,0.08);
+    }
+
+    .watchlist-item.active {
+      border-color: rgba(120,169,255,0.42);
+      background: rgba(69,137,255,0.12);
+    }
+
+    .watchlist-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      color: var(--cds-text-helper);
+      font-size: 10px;
+      font-family: var(--font-mono);
+    }
+
+    .activity-item {
+      border-left: 2px solid rgba(69,137,255,0.42);
+    }
+
+    .activity-item.warn {
+      border-left-color: rgba(241,194,27,0.7);
+    }
+
+    .activity-item.alert {
+      border-left-color: rgba(250,77,86,0.78);
+    }
+
+    .panel-enterprise {
+      height: 100%;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 312px;
+      gap: 1px;
+      background: var(--cds-border-subtle);
+    }
+
+    .panel-enterprise-wide {
+      grid-template-columns: 244px minmax(0, 1fr) 312px;
+    }
+
+    .panel-main,
+    .panel-side {
+      min-width: 0;
+      min-height: 0;
+      background:
+        linear-gradient(180deg, rgba(30,30,30,0.94) 0%, rgba(18,18,18,0.98) 100%);
+    }
+
+    .panel-main {
+      display: flex;
+    }
+
+    .panel-side {
+      overflow: auto;
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .compact-side {
+      padding-right: 12px;
+      padding-left: 12px;
+    }
+
+    .panel-sheet {
+      padding: 18px;
+      gap: 16px;
+      background:
+        linear-gradient(180deg, rgba(38,38,38,0.72) 0%, rgba(22,22,22,0.96) 100%);
+    }
+
+    .panel-toolbar {
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .panel-subfooter {
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .surface-stage {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid var(--cds-border-subtle);
+      background:
+        radial-gradient(circle at 20% 0%, rgba(69,137,255,0.10), transparent 24%),
+        linear-gradient(180deg, rgba(18,18,18,0.84) 0%, rgba(12,12,12,1) 100%);
+    }
+
+    #three-canvas,
+    .surface-label-layer {
+      position: absolute;
+      inset: 0;
+    }
+
+    .surface-label-layer {
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .enterprise-overlay {
+      border-color: rgba(255,255,255,0.045);
+      background: rgba(20,20,20,0.72);
+      box-shadow: 0 14px 32px rgba(0,0,0,0.2);
+      backdrop-filter: blur(10px);
+    }
+
+    #surface-claim {
+      top: 18px;
+      left: 20px;
+      width: min(392px, calc(100% - 40px));
+      padding: 14px 16px;
+    }
+
+    #surface-book-summary {
+      top: 18px;
+      right: 20px;
+      width: 252px;
+      padding: 12px;
+    }
+
+    #surface-controls {
+      left: 16px;
+      top: 126px;
+      bottom: auto;
+      padding: 12px;
+      max-width: calc(100% - 32px);
+      flex-wrap: wrap;
+    }
+
+    #surface-mini-panel {
+      left: 16px;
+      bottom: 16px;
+      width: min(432px, calc(100% - 140px));
+      padding: 10px 12px;
+    }
+
+    #surface-action {
+      right: 16px;
+      bottom: 16px;
+      z-index: 4;
+    }
+
+    .surface-mini-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    #surface-mini-canvas {
+      width: 100%;
+      height: 144px;
+      display: block;
+      border-radius: 2px;
+      background: rgba(10,10,10,0.32);
+    }
+
+    .insight-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--cds-text-primary);
+    }
+
+    .insight-card ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      color: var(--cds-text-secondary);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .insight-card li {
+      padding-left: 12px;
+      position: relative;
+    }
+
+    .insight-card li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 8px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--cds-link-primary);
+    }
+
+    .insight-statline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--cds-text-secondary);
+    }
+
+    .insight-statline strong {
+      color: var(--cds-text-primary);
+      font-family: var(--font-mono);
+    }
+
+    .strategy-empty {
+      margin: 18px;
+      border: 1px dashed rgba(255,255,255,0.12);
+      padding: 18px;
+      color: var(--cds-text-secondary);
+      font-size: 13px;
+      line-height: 1.55;
+      text-align: center;
+    }
+
+    #table-pin-selected.active,
+    #table-filter-violations.active {
+      border-color: rgba(69,137,255,0.58);
+      color: var(--cds-text-primary);
+      background: rgba(69,137,255,0.10);
+    }
+
+    @media (max-width: 1420px) {
+      #app-shell {
+        grid-template-columns: 272px minmax(0, 1fr);
+      }
+
+      .panel-enterprise,
+      .panel-enterprise-wide {
+        grid-template-columns: minmax(0, 1fr) 288px;
+      }
+
+      .compact-side {
+        display: none;
+      }
+    }
+
+    @media (max-width: 1180px) {
+      #app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      #workspace-rail {
+        display: none;
+      }
+
+      .panel-enterprise,
+      .panel-enterprise-wide {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-side {
+        display: none;
+      }
+
+      #surface-mini-panel {
+        width: min(420px, calc(100% - 32px));
+      }
+    }
+
+    @media (max-width: 860px) {
+      #surface-controls {
+        top: auto;
+        bottom: 176px;
+      }
+
+      #surface-mini-panel {
+        width: calc(100% - 32px);
+      }
+
+      .app-tab::before {
+        display: none;
+      }
+    }
+
+    /* Simplified presentation pass */
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(120,169,255,0.32) transparent;
+    }
+
+    *::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    *::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    *::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, rgba(120,169,255,0.28), rgba(168,168,168,0.24));
+      border: 2px solid transparent;
+      border-radius: 999px;
+      background-clip: padding-box;
+    }
+
+    *::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+
+    .header-product {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      justify-self: start;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      justify-self: end;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .header-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--cds-text-primary);
+      letter-spacing: 0.01em;
+    }
+
+    .tour-launch {
+      min-height: 28px;
+      padding: 0 12px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    #app-shell {
+      grid-template-columns: 488px minmax(0, 1fr);
+    }
+
+    #workspace-rail {
+      padding: 32px 28px;
+      gap: 24px;
+    }
+
+    #workspace-rail,
+    .panel-side,
+    .table-scroll,
+    .spread-table-scroll,
+    .strategy-scroll {
+      scrollbar-gutter: stable both-edges;
+    }
+
+    .rail-card,
+    .insight-card {
+      padding: 20px 20px 18px;
+      gap: 14px;
+    }
+
+    .rail-title {
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    .rail-copy,
+    .insight-copy {
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .contract-display {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 30px;
+      padding: 0 10px;
+      width: fit-content;
+      border: 1px solid rgba(120,169,255,0.16);
+      background: rgba(69,137,255,0.05);
+      color: var(--cds-link-primary);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      line-height: 1;
+    }
+
+    .contract-name {
+      font-size: 17px;
+      line-height: 1.35;
+      font-weight: 600;
+      color: var(--cds-text-primary);
+    }
+
+    .contract-subcopy {
+      font-size: 11px;
+      line-height: 1.45;
+      letter-spacing: 0.04em;
+      color: var(--cds-text-helper);
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    .contract-meta-grid {
+      display: grid;
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .workflow-step,
+    .watchlist-item {
+      cursor: default;
+    }
+
+    .watchlist-item:hover {
+      border-color: rgba(255,255,255,0.04);
+      background: rgba(8,8,8,0.18);
+    }
+
+    .panel-enterprise {
+      grid-template-columns: minmax(0, 1fr) 320px;
+    }
+
+    .panel-sheet {
+      padding: 28px 30px 24px;
+      gap: 20px;
+    }
+
+    .panel-title {
+      font-size: 18px;
+      line-height: 1.3;
+    }
+
+    .panel-subtitle {
+      max-width: 70ch;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .surface-shell {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      background:
+        radial-gradient(circle at 24% 8%, rgba(69,137,255,0.08), transparent 26%),
+        linear-gradient(180deg, rgba(18,18,18,0.98) 0%, rgba(8,8,8,1) 100%);
+    }
+
+    #panel-surface .panel-main {
+      background: #121212;
+    }
+
+    .surface-stage {
+      position: absolute;
+      inset: 0;
+      min-height: 0;
+      height: auto;
+      border: none;
+      background: radial-gradient(circle at 20% 0%, rgba(69,137,255,0.10), transparent 24%), linear-gradient(180deg, rgba(18,18,18,0.82) 0%, rgba(8,8,8,1) 100%);
+    }
+
+    #surface-claim {
+      width: min(396px, calc(100% - 40px));
+    }
+
+    #surface-book-summary {
+      width: 252px;
+    }
+
+    .surface-bottom-dock {
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      z-index: 6;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      width: min(548px, calc(100% - 72px));
+    }
+
+    #surface-mini-panel {
+      position: relative;
+      left: auto;
+      right: auto;
+      bottom: auto;
+      width: 100%;
+      padding: 12px 16px;
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+    }
+
+    .surface-slider-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 16px 12px;
+      border: 1px solid rgba(255,255,255,0.045);
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      background: rgba(20,20,20,0.76);
+      backdrop-filter: blur(10px);
+    }
+
+    .surface-slider-group {
+      width: 100%;
+      justify-content: center;
+      min-width: 0;
+      min-height: 30px;
+      gap: 12px;
+      padding: 0 6px;
+    }
+
+    .surface-slider-group input[type="range"] {
+      width: min(260px, 52vw);
+    }
+
+    .panel-nav-dock {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      border-radius: 0;
+      align-self: center;
+    }
+
+    .analysis-sheet {
+      width: 100%;
+    }
+
+    .analysis-stack {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: minmax(320px, 1.04fr) minmax(272px, 0.96fr);
+      gap: 16px;
+    }
+
+    .analysis-chart-shell,
+    .analysis-grid-shell {
+      min-height: 0;
+    }
+
+    .analysis-grid-shell {
+      padding: 0;
+      background: rgba(28,28,28,0.96);
+    }
+
+    .analysis-footer {
+      padding-top: 0;
+      border-top: none;
+    }
+
+    .table-shell,
+    .spread-shell,
+    .strategy-shell,
+    .chart-shell {
+      background: rgba(30,30,30,0.88);
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 11px 10px;
+    }
+
+    .spread-enterprise .panel-side,
+    .strategy-enterprise .panel-side {
+      display: flex;
+    }
+
+    .spread-shell {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .spread-table td,
+    .spread-table th {
+      padding: 13px 12px;
+    }
+
+    .strategy-summary {
+      justify-content: flex-start;
+      gap: 24px;
+    }
+
+    .strategy-readout {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 10px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(18,18,18,0.72);
+      color: var(--cds-text-primary);
+      border-radius: 2px;
+    }
+
+    .placeholder-card {
+      min-height: 148px;
+    }
+
+    .placeholder-fill {
+      flex: 1;
+      min-height: 96px;
+      border: 1px dashed rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.012);
+    }
+
+    @media (max-width: 1420px) {
+      #app-shell {
+        grid-template-columns: 412px minmax(0, 1fr);
+      }
+
+      .panel-enterprise {
+        grid-template-columns: minmax(0, 1fr) 304px;
+      }
+    }
+
+    @media (max-width: 1180px) {
+      .analysis-stack {
+        grid-template-rows: minmax(280px, 1fr) minmax(240px, 1fr);
+      }
+    }
+
+    @media (max-width: 860px) {
+      .surface-slider-group {
+        flex-wrap: wrap;
+      }
+
+      .panel-nav-dock {
+        width: 100%;
+      }
+
+      .panel-nav-dock button {
+        flex: 1;
+      }
+
+      .analysis-stack {
+        grid-template-rows: minmax(240px, 1fr) minmax(220px, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header id="app-header">
+    <div class="header-product">
+      <span class="header-title">Option Settlement Workspace</span>
+    </div>
+
+    <nav id="tab-nav" role="tablist">
+      <button class="app-tab active" data-panel="surface" data-step="01" role="tab" aria-selected="true">Surface</button>
+      <button class="app-tab" data-panel="slice" data-step="02" role="tab" aria-selected="false">2D + Grid</button>
+      <button class="app-tab" data-panel="spread" data-step="03" role="tab" aria-selected="false">Spread Window</button>
+      <button class="app-tab" data-panel="strategy" data-step="04" role="tab" aria-selected="false">Strategy Wizard</button>
+    </nav>
+
+    <div class="header-actions">
+      <div id="spread-legend-detail" style="display:flex; align-items:center; gap:6px;">
+        <span style="font-size:10px; color:var(--cds-text-placeholder); font-family:var(--font-mono);">spread</span>
+        <div style="width:72px; height:4px; border-radius:2px; background:linear-gradient(to right, #4589ff, #f1c21b, #fa4d56);"></div>
+        <span style="font-size:9px; color:var(--cds-text-disabled);">tight &rarr; wide</span>
+      </div>
+
+      <button id="start-tour-btn" class="button-secondary tour-launch">Guided Tour</button>
+    </div>
+
+  </header>
+
+  <div id="app-shell">
+    <aside id="workspace-rail">
+      <div class="rail-label">Desk Workspace</div>
+
+      <div class="rail-card">
+        <div class="card-eyebrow">Active Contract</div>
+        <div id="product-select" class="contract-display mono">ES5</div>
+        <div id="rail-product-meta" class="rail-copy"></div>
+      </div>
+
+      <div class="rail-card">
+        <div class="card-eyebrow">Professional Move</div>
+        <div id="rail-opportunity-title" class="rail-title"></div>
+        <p id="rail-opportunity-body" class="rail-copy"></p>
+        <div id="rail-opportunity-metrics" class="mini-metric-grid"></div>
+      </div>
+
+      <div class="rail-card placeholder-card rail-card-flex">
+        <div class="card-eyebrow">Communication Placeholder</div>
+        <div id="watchlist-products" class="placeholder-fill"></div>
+      </div>
+
+      <div class="rail-card placeholder-card">
+        <div class="card-eyebrow">Workspace Placeholder</div>
+        <div id="activity-log" class="placeholder-fill"></div>
+      </div>
+    </aside>
+
+    <section id="workspace-main">
+      <main id="panel-container">
+        <section id="panel-surface" class="panel active">
+          <div class="panel-enterprise">
+            <div class="panel-main">
+              <div class="surface-shell">
+                <div id="surface-stage" class="surface-stage">
+                  <canvas id="three-canvas" aria-label="Volatility surface"></canvas>
+                  <div id="label-layer" class="surface-label-layer"></div>
+
+                  <div id="surface-book-summary" class="surface-card enterprise-overlay">
+                    <div class="card-eyebrow">Surface Read</div>
+                    <div id="surface-book-metrics" class="mini-metric-grid"></div>
+                  </div>
+                </div>
+
+                <div class="surface-bottom-dock">
+                  <div id="surface-mini-panel" class="surface-card enterprise-overlay">
+                    <div class="surface-mini-header">
+                      <span class="card-eyebrow">Linked Slice Preview</span>
+                      <span class="mono" id="surface-mini-title">Term structure at ATM</span>
+                    </div>
+                    <canvas id="surface-mini-canvas" width="420" height="150"></canvas>
+                  </div>
+
+                  <div class="surface-slider-panel">
+                    <div class="surface-slider-group">
+                      <span class="toggle-label">Slice</span>
+                      <strong id="surface-slice-label" class="mono" style="min-width:44px; color:var(--slice-accent); text-align:center;">ATM</strong>
+                      <input type="range" id="slice-slider" min="0" max="35" value="17" step="1">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="panel-side">
+              <div id="surface-story" class="insight-card"></div>
+              <div class="insight-card">
+                <div class="card-eyebrow">Surface Interpretation</div>
+                <p class="rail-copy">
+                  The aligned liquidity layers come from the archive book-view concept. The trader
+                  reads separation between those layers as trading cost and uses the projection field to spot
+                  where liquidity is thinning before opening a strategy.
+                </p>
+              </div>
+              <div id="surface-hotspots" class="insight-card"></div>
+              <div id="surface-next-step" class="insight-card"></div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="panel-slice" class="panel">
+          <div class="panel-enterprise">
+            <div class="panel-main">
+              <div class="panel-sheet analysis-sheet">
+                <div class="panel-toolbar">
+                  <div>
+                    <div class="panel-title">2D + Grid View at <span id="slice-title-strike" style="color:var(--slice-accent);">ATM</span></div>
+                  </div>
+                  <div class="tag mono" id="slice-mode-badge" style="margin-left:auto;">MID</div>
+                </div>
+
+                <div class="analysis-stack">
+                  <div id="slice-chart-shell" class="chart-shell analysis-chart-shell">
+                    <canvas id="slice-canvas" aria-label="2D slice chart"></canvas>
+                  </div>
+
+                  <div class="table-shell analysis-grid-shell">
+                    <div id="data-grid" class="table-scroll"></div>
+                  </div>
+                </div>
+
+                <div class="panel-subfooter analysis-footer">
+                  <div class="inline-legend">
+                    <span><i style="background:#be95ff;"></i>Mid</span>
+                    <span><i style="background:#42be65;"></i>Bid band</span>
+                    <span><i style="background:#fa4d56;"></i>Ask band</span>
+                  </div>
+                  <div class="spacer"></div>
+                  <span class="mono" id="slice-point-count">36 data points</span>
+                </div>
+              </div>
+            </div>
+
+            <aside class="panel-side">
+              <div id="slice-summary-card" class="insight-card"></div>
+              <div id="slice-trader-read-card" class="insight-card"></div>
+              <div id="slice-next-card" class="insight-card"></div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="panel-spread" class="panel">
+          <div class="panel-enterprise spread-enterprise">
+            <div class="panel-main">
+              <div class="panel-sheet">
+                <div class="panel-toolbar">
+                  <div>
+                    <div class="panel-title">Spread Window - <span id="spread-title-strike" style="color:var(--slice-accent);">ATM</span></div>
+                  </div>
+                </div>
+
+                <div class="spread-shell">
+                  <div id="spread-table" class="spread-table-scroll"></div>
+                  <div id="spread-edit-demo" class="inspector"></div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="panel-side">
+              <div id="spread-ladder-card" class="insight-card"></div>
+              <div id="spread-activity-card" class="insight-card"></div>
+              <div id="spread-validation-card" class="insight-card"></div>
+              <div id="spread-publish-card" class="insight-card"></div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="panel-strategy" class="panel">
+          <div class="panel-enterprise strategy-enterprise">
+            <div class="panel-main">
+              <div class="panel-sheet">
+                <div class="panel-toolbar">
+                  <div>
+                    <div class="panel-title">Strategy Wizard</div>
+                  </div>
+                </div>
+
+                <div id="strategy-builder" class="strategy-shell">
+                  <div id="strategy-legs" class="strategy-scroll"></div>
+                  <div id="strategy-summary-strip" class="strategy-summary">
+                    <div class="summary-metric"><span>Strategy:</span> <strong id="strategy-type">Butterfly Spread</strong></div>
+                    <div class="summary-metric"><span>Net:</span> <strong id="strategy-net">-0.40</strong></div>
+                    <div class="summary-metric"><span>Legs:</span> <strong id="strategy-count">3</strong></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="panel-side">
+              <div id="strategy-chain-card" class="insight-card"></div>
+              <div id="strategy-watchlist-card" class="insight-card"></div>
+              <div id="strategy-submit-card" class="insight-card"></div>
+            </aside>
+          </div>
+        </section>
+      </main>
+    </section>
+  </div>
+
+  <footer id="context-bar">
+    <span id="ctx-product" style="color:var(--cds-text-secondary);">Option Settlement</span>
+    <span style="color:var(--cds-border-subtle);">|</span>
+    <span>Slice: <strong id="ctx-slice" style="color:var(--slice-accent);">ATM</strong></span>
+    <span style="color:var(--cds-border-subtle);">|</span>
+    <span>Lens: <strong id="ctx-mode" style="color:var(--cds-interactive);">MID</strong></span>
+    <span style="color:var(--cds-border-subtle);">|</span>
+    <span>Node: <strong id="ctx-node" style="color:var(--cds-text-secondary);">1M / ATM</strong></span>
+  </footer>
+
+  <div id="surface-tooltip" class="data-tooltip" role="tooltip">
+    <div class="title" id="surface-tooltip-title"></div>
+    <div class="rows">
+      <span>IV Mid</span><span id="surface-tooltip-iv"></span>
+      <span>Bid</span><span id="surface-tooltip-bid"></span>
+      <span>Ask</span><span id="surface-tooltip-ask"></span>
+      <span>Spread</span><span id="surface-tooltip-spread"></span>
+    </div>
+  </div>
+
+  <div id="slice-tooltip" class="data-tooltip" role="tooltip">
+    <div class="title" id="slice-tooltip-title"></div>
+    <div class="rows">
+      <span>Mid</span><span id="slice-tooltip-mid"></span>
+      <span>Bid</span><span id="slice-tooltip-bid"></span>
+      <span>Ask</span><span id="slice-tooltip-ask"></span>
+      <span>Spread</span><span id="slice-tooltip-spread"></span>
+    </div>
+  </div>
+
+  <div id="tour-tooltip">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+      <div style="width:20px; height:20px; border-radius:50%; background:var(--cds-interactive); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; color:#fff; font-family:var(--font-mono);" id="tour-step-number">1</div>
+      <span id="tour-title" style="font-size:14px; font-weight:600; color:var(--cds-text-primary);"></span>
+    </div>
+    <p id="tour-body" style="font-size:13px; line-height:1.55; color:var(--cds-text-secondary); margin:0 0 14px 0;"></p>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button id="tour-prev" class="button-secondary" style="min-height:28px;">&larr; Back</button>
+      <button id="tour-next" class="button-primary" style="min-height:28px;">Next &rarr;</button>
+      <div style="flex:1"></div>
+      <button id="tour-skip" class="button-ghost" style="font-size:11px; color:var(--cds-text-placeholder);">Skip tour</button>
+    </div>
+    <div style="margin-top:10px; height:2px; border-radius:1px; background:var(--cds-layer-03);">
+      <div id="tour-progress" style="height:100%; width:0; border-radius:1px; background:var(--cds-interactive); transition:width 0.3s ease;"></div>
+    </div>
+  </div>
+
+  <div id="toast-stack"></div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const ROWS = 36;
+    const COLS = 36;
+    const SX = 1.2;
+    const SZ = 1.0;
+    const SH = 90;
+
+    const STRIKE_LABELS = Array.from({ length: COLS }, (_, i) => {
+      const sigma = -2.0 + (i / (COLS - 1)) * 4.5;
+      if (Math.abs(sigma) < 0.12) return 'ATM';
+      return `${sigma > 0 ? '+' : ''}${sigma.toFixed(1)}\u03c3`;
+    });
+
+    const EXPIRY_LABELS = [
+      '1W','2W','3W','1M','6W','2M','3M','4M','5M','6M',
+      '7M','8M','9M','10M','11M','1Y','18M','2Y','3Y','4Y',
+      '5Y','6Y','7Y','8Y','9Y','10Y','12Y','15Y','18Y','20Y',
+      '25Y','30Y','35Y','40Y','45Y','50Y'
+    ];
+
+    const PRODUCTS = [
+      { symbol: 'ES5', name: 'E-mini S&P 500', exchange: 'Mercantile Exchange', assetClass: 'Equity Index' },
+      { symbol: 'NQ5', name: 'E-mini NASDAQ-100', exchange: 'Mercantile Exchange', assetClass: 'Equity Index' },
+      { symbol: 'CL5', name: 'Crude Oil', exchange: 'NYMEX', assetClass: 'Energy' },
+      { symbol: 'ZN5', name: '10-Year Treasury Note', exchange: 'CBOT', assetClass: 'Rates' },
+      { symbol: 'GC5', name: 'Gold', exchange: 'COMEX', assetClass: 'Metals' }
+    ];
+
+    function generateIVSurface(rows, cols) {
+      const data = [];
+      for (let y = 0; y < rows; y++) {
+        const row = [];
+        const t = y / (rows - 1);
+        const termStructure = 0.11 + 0.04 * Math.sqrt(t + 0.02);
+        for (let x = 0; x < cols; x++) {
+          const k = (x / (cols - 1)) * 4.5 - 2.0;
+          const skew = 0.025 * k * k - 0.012 * k;
+          const skewDamp = 1.0 - 0.5 * t;
+          const noise = 0.002 * Math.sin(x * 2.7 + y * 1.9) * Math.cos(x * 0.8 - y * 1.1);
+          row.push(Math.max(0.08, Math.min(0.22, termStructure + skew * skewDamp + noise)));
+        }
+        data.push(row);
+      }
+      return data;
+    }
+
+    function generateSpreadSurface(rows, cols) {
+      const data = [];
+      for (let y = 0; y < rows; y++) {
+        const row = [];
+        const t = y / (rows - 1);
+        for (let x = 0; x < cols; x++) {
+          const k = (x / (cols - 1)) * 4.5 - 2.0;
+          const otmPremium = 0.003 * k * k;
+          const termDecay = 0.005 * Math.exp(-4 * t);
+          const noise = 0.001 * Math.abs(Math.sin(x * 1.3 + y * 2.1));
+          row.push(0.004 + otmPremium + termDecay + noise);
+        }
+        data.push(row);
+      }
+      return data;
+    }
+
+    const ivData = generateIVSurface(ROWS, COLS);
+    const spreadData = generateSpreadSurface(ROWS, COLS);
+    const askData = ivData.map((row, y) => row.map((v, x) => v + spreadData[y][x] / 2));
+    const bidData = ivData.map((row, y) => row.map((v, x) => v - spreadData[y][x] / 2));
+
+    function spreadToRGB(spread) {
+      const minS = 0.003;
+      const maxS = 0.015;
+      const t = Math.max(0, Math.min(1, (spread - minS) / (maxS - minS)));
+      const hue = t < 0.5
+        ? 0.62 - (0.62 - 0.15) * (t * 2)
+        : 0.15 - (0.15 - 0.04) * ((t - 0.5) * 2);
+      const c = new THREE.Color();
+      c.setHSL(hue, 0.78, 0.55);
+      return [c.r, c.g, c.b];
+    }
+
+    function spreadToCss(spread, alpha = 0.18) {
+      const [r, g, b] = spreadToRGB(spread).map((v) => Math.round(v * 255));
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function formatPct(v, digits = 3) {
+      return `${(v * 100).toFixed(digits)}%`;
+    }
+
+    function formatBps(v) {
+      return `${v.toFixed(1)} bps`;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function keyFor(row, col, field) {
+      return `${row}-${col}-${field}`;
+    }
+
+    function parsePercentInput(raw) {
+      const cleaned = String(raw).replace(/[^\d.+-]/g, '');
+      if (!cleaned) return null;
+      const value = Number(cleaned);
+      if (Number.isNaN(value)) return null;
+      return value > 1 ? value / 100 : value;
+    }
+
+    function defaultSelectedCell() {
+      return { row: 3, col: 17 };
+    }
+
+    function createDefaultStrategy(row = 3, col = 17) {
+      return [
+        { type: 'Put', strikeIndex: clamp(col - 4, 0, COLS - 1), expiryIndex: row, qty: 1 },
+        { type: 'Put', strikeIndex: col, expiryIndex: row, qty: -2 },
+        { type: 'Put', strikeIndex: clamp(col + 4, 0, COLS - 1), expiryIndex: row, qty: 1 }
+      ];
+    }
+
+    const VIOLATION_KEYS = new Set(['2-17', '10-23', '22-11']);
+    const PANEL_SEQUENCE = ['surface', 'slice', 'spread', 'strategy'];
+    const PANEL_META = {
+      surface: {
+        index: 0,
+        title: 'Spot the Surface',
+        crumb: 'Surface',
+        copy: 'Scan the layered surface for a working dislocation before narrowing down to 1 strike.'
+      },
+      slice: {
+        index: 1,
+        title: 'Read the 2D + Grid View',
+        crumb: 'Surface / 2D + Grid',
+        copy: 'Turn the 3D cue into a precise chart read and an exact supporting grid.'
+      },
+      spread: {
+        index: 2,
+        title: 'Review the Spread Window',
+        crumb: '2D + Grid / Spread Window',
+        copy: 'Carry the same strike into the spread-window layout as a read-only intervention step.'
+      },
+      strategy: {
+        index: 3,
+        title: 'Stage the Strategy Package',
+        crumb: 'Spread Window / Strategy Wizard',
+        copy: 'End on a desk-ready strategy package built from the same spotted opportunity.'
+      }
+    };
+
+    const state = {
+      activePanel: 'surface',
+      activeMode: 'mid',
+      activeProduct: PRODUCTS[0],
+      activeSliceIndex: 17,
+      selectedCell: defaultSelectedCell(),
+      hiddenColumns: new Set(),
+      pinnedStrikes: new Set([17]),
+      showViolationsOnly: false,
+      spreadEdits: new Map(),
+      editingSpreadCell: null,
+      strategyLegs: createDefaultStrategy(),
+      activityLog: [
+        { tone: 'info', title: 'Surface scan', body: 'Desk opened the layered surface and started with the active contract.' },
+        { tone: 'warn', title: 'Opportunity found', body: 'ATM 1M shows a wider working spread than the surrounding expiries.' },
+        { tone: 'info', title: 'Plan', body: 'Inspect the term structure, verify the grid, then build a butterfly from the edited state.' }
+      ],
+      tourActive: false,
+      tourStep: 0
+    };
+
+    const refs = {
+      tabs: Array.from(document.querySelectorAll('.app-tab')),
+      panels: {
+        surface: document.getElementById('panel-surface'),
+        slice: document.getElementById('panel-slice'),
+        spread: document.getElementById('panel-spread'),
+        strategy: document.getElementById('panel-strategy')
+      },
+      productSelect: document.getElementById('product-select'),
+      railProductMeta: document.getElementById('rail-product-meta'),
+      railOpportunityTitle: document.getElementById('rail-opportunity-title'),
+      railOpportunityBody: document.getElementById('rail-opportunity-body'),
+      railOpportunityMetrics: document.getElementById('rail-opportunity-metrics'),
+      watchlistProducts: document.getElementById('watchlist-products'),
+      activityLog: document.getElementById('activity-log'),
+      ctxProduct: document.getElementById('ctx-product'),
+      ctxSlice: document.getElementById('ctx-slice'),
+      ctxMode: document.getElementById('ctx-mode'),
+      ctxNode: document.getElementById('ctx-node'),
+      surfaceStage: document.getElementById('surface-stage'),
+      surfaceSliceLabel: document.getElementById('surface-slice-label'),
+      surfaceBookMetrics: document.getElementById('surface-book-metrics'),
+      surfaceMiniCanvas: document.getElementById('surface-mini-canvas'),
+      surfaceMiniTitle: document.getElementById('surface-mini-title'),
+      surfaceStory: document.getElementById('surface-story'),
+      surfaceHotspots: document.getElementById('surface-hotspots'),
+      surfaceNextStep: document.getElementById('surface-next-step'),
+      surfaceSlider: document.getElementById('slice-slider'),
+      sliceTitleStrike: document.getElementById('slice-title-strike'),
+      sliceModeBadge: document.getElementById('slice-mode-badge'),
+      slicePointCount: document.getElementById('slice-point-count'),
+      sliceChartShell: document.getElementById('slice-chart-shell'),
+      sliceCanvas: document.getElementById('slice-canvas'),
+      sliceSummaryCard: document.getElementById('slice-summary-card'),
+      sliceTraderReadCard: document.getElementById('slice-trader-read-card'),
+      sliceNextCard: document.getElementById('slice-next-card'),
+      dataGrid: document.getElementById('data-grid'),
+      spreadTitleStrike: document.getElementById('spread-title-strike'),
+      spreadTable: document.getElementById('spread-table'),
+      spreadInspector: document.getElementById('spread-edit-demo'),
+      spreadLadderCard: document.getElementById('spread-ladder-card'),
+      spreadActivityCard: document.getElementById('spread-activity-card'),
+      spreadValidationCard: document.getElementById('spread-validation-card'),
+      spreadPublishCard: document.getElementById('spread-publish-card'),
+      strategyLegs: document.getElementById('strategy-legs'),
+      strategyType: document.getElementById('strategy-type'),
+      strategyNet: document.getElementById('strategy-net'),
+      strategyCount: document.getElementById('strategy-count'),
+      strategyChainCard: document.getElementById('strategy-chain-card'),
+      strategyWatchlistCard: document.getElementById('strategy-watchlist-card'),
+      strategySubmitCard: document.getElementById('strategy-submit-card'),
+      toastStack: document.getElementById('toast-stack'),
+      surfaceTooltip: document.getElementById('surface-tooltip'),
+      surfaceTooltipTitle: document.getElementById('surface-tooltip-title'),
+      surfaceTooltipIv: document.getElementById('surface-tooltip-iv'),
+      surfaceTooltipBid: document.getElementById('surface-tooltip-bid'),
+      surfaceTooltipAsk: document.getElementById('surface-tooltip-ask'),
+      surfaceTooltipSpread: document.getElementById('surface-tooltip-spread'),
+      sliceTooltip: document.getElementById('slice-tooltip'),
+      sliceTooltipTitle: document.getElementById('slice-tooltip-title'),
+      sliceTooltipMid: document.getElementById('slice-tooltip-mid'),
+      sliceTooltipBid: document.getElementById('slice-tooltip-bid'),
+      sliceTooltipAsk: document.getElementById('slice-tooltip-ask'),
+      sliceTooltipSpread: document.getElementById('slice-tooltip-spread'),
+      tourTooltip: document.getElementById('tour-tooltip'),
+      tourStepNumber: document.getElementById('tour-step-number'),
+      tourTitle: document.getElementById('tour-title'),
+      tourBody: document.getElementById('tour-body'),
+      tourPrev: document.getElementById('tour-prev'),
+      tourNext: document.getElementById('tour-next'),
+      tourSkip: document.getElementById('tour-skip'),
+      tourProgress: document.getElementById('tour-progress')
+    };
+
+    function getBasePoint(row, col) {
+      return {
+        mid: ivData[row][col],
+        bid: bidData[row][col],
+        ask: askData[row][col]
+      };
+    }
+
+    function getPoint(row, col) {
+      const base = getBasePoint(row, col);
+      const editedBid = state.spreadEdits.get(keyFor(row, col, 'bid'));
+      const editedAsk = state.spreadEdits.get(keyFor(row, col, 'ask'));
+      const bid = editedBid ?? base.bid;
+      const ask = editedAsk ?? base.ask;
+      const mid = (editedBid !== undefined || editedAsk !== undefined) ? (bid + ask) / 2 : base.mid;
+      return { mid, bid, ask, spreadBps: (ask - bid) * 10000 };
+    }
+
+    function getSpreadValidation(row, col) {
+      const point = getPoint(row, col);
+      const base = getBasePoint(row, col);
+      const tolerance = Math.max(spreadData[row][col] * 1.8, 0.008);
+      const errors = [];
+      if (point.bid >= point.ask) errors.push('Bid cannot exceed ask.');
+      if (Math.abs(point.mid - base.mid) > tolerance) errors.push('Value exceeds tolerance band.');
+      if (point.bid < 0.05 || point.ask > 0.35) errors.push('Value is outside supported range.');
+      const structuralViolation = VIOLATION_KEYS.has(`${row}-${col}`);
+      return { errors, isViolation: structuralViolation || errors.length > 0 };
+    }
+
+    function getActiveCurveData(mode = state.activeMode) {
+      if (mode === 'ask') return askData;
+      if (mode === 'bid') return bidData;
+      return ivData;
+    }
+
+    function getCurrentNode() {
+      const row = state.selectedCell?.row ?? 3;
+      const col = state.activeSliceIndex;
+      const point = getPoint(row, col);
+      const base = getBasePoint(row, col);
+      const validation = getSpreadValidation(row, col);
+      return {
+        row,
+        col,
+        expiry: EXPIRY_LABELS[row],
+        strike: STRIKE_LABELS[col],
+        point,
+        base,
+        validation
+      };
+    }
+
+    function getPanelMeta(panel = state.activePanel) {
+      return PANEL_META[panel];
+    }
+
+    function countSliceViolations(col = state.activeSliceIndex) {
+      return EXPIRY_LABELS.reduce((count, _label, rowIndex) => {
+        return count + (getSpreadValidation(rowIndex, col).isViolation ? 1 : 0);
+      }, 0);
+    }
+
+    function countEditedCells() {
+      return new Set(Array.from(state.spreadEdits.keys()).map((key) => key.split('-').slice(0, 2).join('-'))).size;
+    }
+
+    function formatSignedBps(value) {
+      return `${value >= 0 ? '+' : ''}${value.toFixed(1)} bps`;
+    }
+
+    function describeSpread(spreadBps) {
+      if (spreadBps >= 110) return 'wide';
+      if (spreadBps >= 70) return 'working';
+      return 'tight';
+    }
+
+    function getVisibleTableCols() {
+      const start = clamp(state.activeSliceIndex - 5, 0, COLS - 1);
+      const end = clamp(state.activeSliceIndex + 5, 0, COLS - 1);
+      return Array.from({ length: end - start + 1 }, (_, offset) => start + offset);
+    }
+
+    function getVisibleTableRows() {
+      return EXPIRY_LABELS.map((_, row) => row);
+    }
+
+    function renderMiniMetrics(items) {
+      return items.map((item) => `
+        <div class="mini-metric ${item.tone ?? ''}">
+          <span>${item.label}</span>
+          <strong>${item.value}</strong>
+        </div>
+      `).join('');
+    }
+
+    function pushActivity(title, body, tone = 'info') {
+      const previous = state.activityLog[0];
+      if (previous && previous.title === title && previous.body === body) return;
+      state.activityLog.unshift({ tone, title, body });
+      state.activityLog = state.activityLog.slice(0, 6);
+      renderWorkspaceRail();
+    }
+
+    function updateContextBar() {
+      const node = getCurrentNode();
+      refs.ctxProduct.textContent = 'Option Settlement';
+      refs.ctxSlice.textContent = node.strike;
+      refs.ctxMode.textContent = state.activeMode.toUpperCase();
+      refs.ctxNode.textContent = `${node.expiry} / ${node.strike}`;
+      refs.surfaceSliceLabel.textContent = STRIKE_LABELS[state.activeSliceIndex];
+      refs.sliceTitleStrike.textContent = STRIKE_LABELS[state.activeSliceIndex];
+      refs.sliceModeBadge.textContent = state.activeMode.toUpperCase();
+      refs.spreadTitleStrike.textContent = STRIKE_LABELS[state.activeSliceIndex];
+    }
+
+    function showToast(message, tone = 'success') {
+      const el = document.createElement('div');
+      el.className = `toast ${tone}`;
+      el.innerHTML = `<span>${tone === 'success' ? '&#10003;' : '&#9888;'}</span><span>${message}</span>`;
+      refs.toastStack.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(6px)';
+      }, 2400);
+      setTimeout(() => el.remove(), 2800);
+    }
+
+    function hideDataTooltips() {
+      refs.surfaceTooltip.style.display = 'none';
+      refs.sliceTooltip.style.display = 'none';
+    }
+
+    let pendingEmbedHeightFrame = 0;
+    let lastEmbedHeight = 0;
+
+    function syncEmbedHeight() {
+      if (window.parent === window) return;
+      cancelAnimationFrame(pendingEmbedHeightFrame);
+      pendingEmbedHeightFrame = requestAnimationFrame(() => {
+        const nextHeight = Math.ceil(
+          Math.max(
+            document.body.scrollHeight,
+            document.documentElement.scrollHeight,
+            document.body.offsetHeight,
+            document.documentElement.offsetHeight
+          )
+        );
+        if (!nextHeight || nextHeight === lastEmbedHeight) return;
+        lastEmbedHeight = nextHeight;
+        window.parent.postMessage({ type: 'pf-iframe-height', height: nextHeight }, '*');
+      });
+    }
+
+    function switchPanel(panel) {
+      state.activePanel = panel;
+      refs.tabs.forEach((tab) => {
+        const active = tab.dataset.panel === panel;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+      });
+      Object.entries(refs.panels).forEach(([name, node]) => {
+        node.classList.toggle('active', name === panel);
+      });
+      updateContextBar();
+      renderWorkspaceRail();
+      if (panel === 'surface') {
+        resizeSurfaceRenderer();
+        renderSurfacePanel();
+      }
+      if (panel === 'slice') {
+        renderSlicePanel();
+        renderTablePanel();
+      }
+      if (panel === 'spread') {
+        renderSpreadPanel();
+        requestAnimationFrame(scrollSpreadToSelectedRow);
+      }
+      if (panel === 'strategy') cloneStrategyFromAnalysis();
+      hideDataTooltips();
+      syncEmbedHeight();
+    }
+
+    function setSliceIndex(nextIndex, options = {}) {
+      state.activeSliceIndex = clamp(nextIndex, 0, COLS - 1);
+      refs.surfaceSlider.value = String(state.activeSliceIndex);
+      state.selectedCell = {
+        row: options.row ?? state.selectedCell?.row ?? 3,
+        col: state.activeSliceIndex
+      };
+      updateContextBar();
+      updateSurfaceSlice();
+      renderSurfacePanel();
+      renderSlicePanel();
+      renderTablePanel();
+      renderSpreadPanel();
+      renderStrategyPanel();
+      renderWorkspaceRail();
+    }
+
+    function setMode(mode) {
+      state.activeMode = mode;
+      document.querySelectorAll('.mode-btn').forEach((button) => {
+        button.classList.toggle('active', button.dataset.mode === mode);
+      });
+      updateContextBar();
+      setSurfaceFocus(mode);
+      renderSurfacePanel();
+      renderSlicePanel();
+      renderWorkspaceRail();
+    }
+
+    function renderWorkspaceRail() {
+      const node = getCurrentNode();
+      const panelMeta = getPanelMeta();
+      refs.productSelect.textContent = state.activeProduct.symbol;
+      refs.railProductMeta.innerHTML = `
+        <div class="contract-name">${state.activeProduct.name}</div>
+        <div class="contract-subcopy">${state.activeProduct.exchange} · ${state.activeProduct.assetClass}</div>
+        <div class="contract-meta-grid">
+          <div class="insight-statline"><span>Workspace</span><strong>${panelMeta.crumb}</strong></div>
+          <div class="insight-statline"><span>Node</span><strong>${node.expiry} / ${node.strike}</strong></div>
+        </div>
+      `;
+      refs.railOpportunityTitle.textContent = `${node.expiry} ${node.strike} ${describeSpread(node.point.spreadBps)} spread pocket`;
+      refs.railOpportunityBody.textContent = `The selected contract shows a ${formatBps(node.point.spreadBps)} working spread at ${node.expiry} / ${node.strike}. The prototype stays intentionally simplified, but the story still matches the original flow from surface to applied strategy.`;
+      refs.railOpportunityMetrics.innerHTML = renderMiniMetrics([
+        { label: 'Node', value: `${node.expiry} / ${node.strike}`, tone: 'info' },
+        { label: 'Spread', value: formatBps(node.point.spreadBps), tone: node.point.spreadBps >= 110 ? 'alert' : 'warn' },
+        { label: 'Flags on Slice', value: String(countSliceViolations()), tone: countSliceViolations() ? 'warn' : 'good' }
+      ]);
+
+      refs.watchlistProducts.innerHTML = '';
+      refs.activityLog.innerHTML = '';
+    }
+
+    const projectionPalette = [
+      { stop: 0.00, color: new THREE.Color(0x102033) },
+      { stop: 0.24, color: new THREE.Color(0x18476a) },
+      { stop: 0.50, color: new THREE.Color(0x1f8a9b) },
+      { stop: 0.76, color: new THREE.Color(0x8fd3c1) },
+      { stop: 1.00, color: new THREE.Color(0xf0b95c) }
+    ];
+
+    function projectionToRGB(intensity) {
+      const t = Math.max(0, Math.min(1, intensity));
+      for (let i = 1; i < projectionPalette.length; i++) {
+        const prev = projectionPalette[i - 1];
+        const next = projectionPalette[i];
+        if (t <= next.stop) {
+          const local = (t - prev.stop) / (next.stop - prev.stop || 1);
+          const eased = local * local * (3 - 2 * local);
+          const c = prev.color.clone().lerp(next.color, eased);
+          return [c.r, c.g, c.b];
+        }
+      }
+      const last = projectionPalette[projectionPalette.length - 1].color;
+      return [last.r, last.g, last.b];
+    }
+
+    function normalizeGrid(grid) {
+      let min = Infinity;
+      let max = -Infinity;
+      grid.forEach((row) => row.forEach((value) => {
+        min = Math.min(min, value);
+        max = Math.max(max, value);
+      }));
+      const span = max - min || 1;
+      return grid.map((row) => row.map((value) => (value - min) / span));
+    }
+
+    function blurGrid(grid, passes = 1) {
+      let current = grid.map((row) => row.slice());
+      for (let pass = 0; pass < passes; pass++) {
+        const next = current.map((row) => row.slice());
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            let sum = 0;
+            let weightSum = 0;
+            for (let dr = -1; dr <= 1; dr++) {
+              for (let dc = -1; dc <= 1; dc++) {
+                const rr = clamp(r + dr, 0, ROWS - 1);
+                const cc = clamp(c + dc, 0, COLS - 1);
+                const weight = dr === 0 && dc === 0 ? 4 : (dr === 0 || dc === 0 ? 2 : 1);
+                sum += current[rr][cc] * weight;
+                weightSum += weight;
+              }
+            }
+            next[r][c] = sum / weightSum;
+          }
+        }
+        current = next;
+      }
+      return current;
+    }
+
+    function gradientAt(data, row, col) {
+      const r0 = clamp(row - 1, 0, ROWS - 1);
+      const r1 = clamp(row + 1, 0, ROWS - 1);
+      const c0 = clamp(col - 1, 0, COLS - 1);
+      const c1 = clamp(col + 1, 0, COLS - 1);
+      const dx = data[row][c1] - data[row][c0];
+      const dz = data[r1][col] - data[r0][col];
+      return Math.sqrt(dx * dx + dz * dz);
+    }
+
+    function computeProjectionField() {
+      const meanHeightGrid = ivData.map((row, r) => row.map((value, c) => (bidData[r][c] + value + askData[r][c]) / 3));
+      const bandGrid = askData.map((row, r) => row.map((value, c) => value - bidData[r][c]));
+      const structureGrid = ivData.map((row, r) => row.map((_value, c) => {
+        const midGrad = gradientAt(ivData, r, c);
+        const askGrad = gradientAt(askData, r, c);
+        const bidGrad = gradientAt(bidData, r, c);
+        return midGrad * 0.45 + askGrad * 0.275 + bidGrad * 0.275;
+      }));
+
+      const normMean = normalizeGrid(meanHeightGrid);
+      const normBand = normalizeGrid(bandGrid);
+      const normStructure = normalizeGrid(structureGrid);
+
+      const rawField = ivData.map((row, r) => row.map((_value, c) => {
+        const compression = 1 - normBand[r][c];
+        return 0.48 * compression + 0.34 * normStructure[r][c] + 0.18 * normMean[r][c];
+      }));
+
+      const baseBlur = blurGrid(rawField, 3);
+      const haloBlur = blurGrid(baseBlur, 2);
+
+      return {
+        base: normalizeGrid(baseBlur.map((row, r) => row.map((value, c) => 0.72 * value + 0.28 * rawField[r][c]))),
+        halo: normalizeGrid(haloBlur)
+      };
+    }
+
+    function buildSurfaceGeometry(data, colorFn = null) {
+      const triCount = (ROWS - 1) * (COLS - 1) * 2;
+      const positions = new Float32Array(triCount * 3 * 3);
+      const colors = colorFn ? new Float32Array(triCount * 3 * 3) : null;
+      let pi = 0;
+      let ci = 0;
+      const pos = (r, c) => [c * SX, data[r][c] * SH, r * SZ];
+
+      for (let r = 0; r < ROWS - 1; r++) {
+        for (let c = 0; c < COLS - 1; c++) {
+          const [ax, ay, az] = pos(r, c);
+          const [bx, by, bz] = pos(r, c + 1);
+          const [cx, cy, cz] = pos(r + 1, c);
+          const [dx, dy, dz] = pos(r + 1, c + 1);
+          const verts = [
+            ax, ay, az, cx, cy, cz, bx, by, bz,
+            bx, by, bz, cx, cy, cz, dx, dy, dz
+          ];
+          for (const value of verts) positions[pi++] = value;
+          if (colors) {
+            const [cr, cg, cb] = colorFn(r, c);
+            for (let i = 0; i < 6; i++) {
+              colors[ci++] = cr;
+              colors[ci++] = cg;
+              colors[ci++] = cb;
+            }
+          }
+        }
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      if (colors) geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.computeVertexNormals();
+      return geometry;
+    }
+
+    function buildProjectionGeometry(field, floorY) {
+      const triCount = (ROWS - 1) * (COLS - 1) * 2;
+      const positions = new Float32Array(triCount * 3 * 3);
+      const colors = new Float32Array(triCount * 3 * 3);
+      let pi = 0;
+      let ci = 0;
+
+      const pushVertex = (x, y, z, intensity) => {
+        positions[pi++] = x;
+        positions[pi++] = y;
+        positions[pi++] = z;
+        const [cr, cg, cb] = projectionToRGB(intensity);
+        colors[ci++] = cr;
+        colors[ci++] = cg;
+        colors[ci++] = cb;
+      };
+
+      for (let r = 0; r < ROWS - 1; r++) {
+        for (let c = 0; c < COLS - 1; c++) {
+          const ax = c * SX;
+          const az = r * SZ;
+          const bx = (c + 1) * SX;
+          const bz = r * SZ;
+          const cx = c * SX;
+          const cz = (r + 1) * SZ;
+          const dx = (c + 1) * SX;
+          const dz = (r + 1) * SZ;
+          pushVertex(ax, floorY, az, field[r][c]);
+          pushVertex(cx, floorY, cz, field[r + 1][c]);
+          pushVertex(bx, floorY, bz, field[r][c + 1]);
+          pushVertex(bx, floorY, bz, field[r][c + 1]);
+          pushVertex(cx, floorY, cz, field[r + 1][c]);
+          pushVertex(dx, floorY, dz, field[r + 1][c + 1]);
+        }
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      return geometry;
+    }
+
+    const surfaceCanvas = document.getElementById('three-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas: surfaceCanvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x161616, 1);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x161616, 0.006);
+
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.minDistance = 20;
+    controls.maxDistance = 200;
+    controls.maxPolarAngle = Math.PI * 0.82;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.34);
+    const keyLight = new THREE.PointLight(0xffffff, 1.5, 500);
+    const fillLight = new THREE.DirectionalLight(0x3355bb, 0.35);
+    keyLight.position.set(15, 70, 15);
+    fillLight.position.set(-25, 35, -25);
+    scene.add(ambientLight, keyLight, fillLight);
+
+    const midSurfaceMat = new THREE.MeshPhongMaterial({
+      vertexColors: true,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.94,
+      shininess: 30,
+      specular: new THREE.Color(0x1a2a4a)
+    });
+
+    const askSurfaceMat = new THREE.MeshPhongMaterial({
+      color: 0xe5fbff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.26,
+      depthWrite: false,
+      shininess: 85,
+      specular: new THREE.Color(0xffffff),
+      emissive: new THREE.Color(0x12384c)
+    });
+
+    const bidSurfaceMat = new THREE.MeshPhongMaterial({
+      color: 0xa9deff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.20,
+      depthWrite: false,
+      shininess: 70,
+      specular: new THREE.Color(0xd6f3ff),
+      emissive: new THREE.Color(0x0d2940)
+    });
+
+    const bidSurfaceMesh = new THREE.Mesh(buildSurfaceGeometry(bidData), bidSurfaceMat);
+    const midSurfaceMesh = new THREE.Mesh(
+      buildSurfaceGeometry(ivData, (r, c) => spreadToRGB(spreadData[r][c])),
+      midSurfaceMat
+    );
+    const askSurfaceMesh = new THREE.Mesh(buildSurfaceGeometry(askData), askSurfaceMat);
+
+    bidSurfaceMesh.renderOrder = 1;
+    midSurfaceMesh.renderOrder = 2;
+    askSurfaceMesh.renderOrder = 3;
+    scene.add(bidSurfaceMesh, midSurfaceMesh, askSurfaceMesh);
+
+    const projectionField = computeProjectionField();
+    const projectionBaseMat = new THREE.MeshBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.52,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+    const projectionHaloMat = new THREE.MeshBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.22,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+    const projectionGroup = new THREE.Group();
+    const floorMesh = new THREE.Mesh(buildProjectionGeometry(projectionField.base, -0.58), projectionBaseMat);
+    const floorHaloMesh = new THREE.Mesh(buildProjectionGeometry(projectionField.halo, -0.72), projectionHaloMat);
+    projectionGroup.add(floorHaloMesh, floorMesh);
+    scene.add(projectionGroup);
+
+    const gridW = (COLS - 1) * SX;
+    const gridD = (ROWS - 1) * SZ;
+    const maxSceneIv = Math.max(...askData.flat());
+    const gridH = maxSceneIv * SH + 4;
+
+    const floorGrid = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.PlaneGeometry(gridW, gridD, 6, 6).rotateX(Math.PI / 2)),
+      new THREE.LineBasicMaterial({ color: 0x393939, opacity: 0.45, transparent: true })
+    );
+    floorGrid.position.set(gridW / 2, -0.92, gridD / 2);
+
+    const backWall = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.PlaneGeometry(gridW, gridH, 6, 5)),
+      new THREE.LineBasicMaterial({ color: 0x393939, opacity: 0.35, transparent: true })
+    );
+    backWall.position.set(gridW / 2, gridH / 2 - 0.6, gridD);
+
+    const sideWall = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.PlaneGeometry(gridD, gridH, 6, 5).rotateY(Math.PI / 2)),
+      new THREE.LineBasicMaterial({ color: 0x393939, opacity: 0.35, transparent: true })
+    );
+    sideWall.position.set(gridW, gridH / 2 - 0.6, gridD / 2);
+    scene.add(floorGrid, backWall, sideWall);
+
+    const centerX = gridW / 2;
+    const centerZ = gridD / 2;
+    const centerY = 0.15 * SH;
+    const initialFrameLift = gridH * 0.15;
+    camera.position.set(centerX + 35, centerY + 40, centerZ + 35);
+    camera.lookAt(centerX, centerY - initialFrameLift, centerZ);
+    controls.target.set(centerX, centerY - initialFrameLift, centerZ);
+    controls.update();
+
+    let wireEnabled = false;
+    let wireMeshes = [];
+    let slicePlaneMesh = null;
+    let sliceEdgeLine = null;
+    let sliceMidCurveLine = null;
+    let sliceAskCurveLine = null;
+    let sliceBidCurveLine = null;
+
+    const sliceFillMat = new THREE.MeshBasicMaterial({
+      color: 0xbe95ff,
+      transparent: true,
+      opacity: 0.10,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const sliceEdgeMat = new THREE.LineBasicMaterial({ color: 0xbe95ff, transparent: true, opacity: 0.65 });
+    const sliceMidCurveMat = new THREE.LineBasicMaterial({ color: 0xbe95ff, transparent: true, opacity: 0.95 });
+    const sliceAskCurveMat = new THREE.LineBasicMaterial({ color: 0xe5fbff, transparent: true, opacity: 0.78 });
+    const sliceBidCurveMat = new THREE.LineBasicMaterial({ color: 0xa9deff, transparent: true, opacity: 0.66 });
+
+    function buildSlicePlaneGeo(colIndex) {
+      const x = colIndex * SX;
+      const maxY = maxSceneIv * SH + 3;
+      const maxZ = (ROWS - 1) * SZ;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute([
+        x, -0.6, 0,
+        x, maxY, 0,
+        x, maxY, maxZ,
+        x, -0.6, maxZ
+      ], 3));
+      geometry.setIndex([0, 1, 2, 0, 2, 3]);
+      return geometry;
+    }
+
+    function buildSliceCurveGeo(colIndex, data) {
+      const points = data.map((row, r) => new THREE.Vector3(colIndex * SX, row[colIndex] * SH, r * SZ));
+      return new THREE.BufferGeometry().setFromPoints(points);
+    }
+
+    function clearWireMeshes() {
+      wireMeshes.forEach((mesh) => {
+        scene.remove(mesh);
+        mesh.geometry.dispose();
+        mesh.material.dispose();
+      });
+      wireMeshes = [];
+    }
+
+    function addWireFor(mesh, color, opacity) {
+      const wire = new THREE.LineSegments(
+        new THREE.WireframeGeometry(mesh.geometry),
+        new THREE.LineBasicMaterial({ color, opacity, transparent: true })
+      );
+      scene.add(wire);
+      wireMeshes.push(wire);
+    }
+
+    function refreshWire() {
+      clearWireMeshes();
+      if (!wireEnabled) return;
+      addWireFor(midSurfaceMesh, 0xffffff, 0.12);
+      addWireFor(askSurfaceMesh, 0xe5fbff, 0.14);
+      addWireFor(bidSurfaceMesh, 0xa9deff, 0.10);
+    }
+
+    function applySurfaceFocusToLabels() {
+      const active = state.activeMode;
+      const askLabel = document.getElementById('lbl-book-ask');
+      const midLabel = document.getElementById('lbl-book-mid');
+      const bidLabel = document.getElementById('lbl-book-bid');
+      if (!askLabel || !midLabel || !bidLabel) return;
+      askLabel.dataset.focusOpacity = active === 'ask' ? '1' : '0.78';
+      midLabel.dataset.focusOpacity = active === 'mid' ? '1' : '0.78';
+      bidLabel.dataset.focusOpacity = active === 'bid' ? '1' : '0.74';
+      askLabel.style.opacity = askLabel.dataset.focusOpacity;
+      midLabel.style.opacity = midLabel.dataset.focusOpacity;
+      bidLabel.style.opacity = bidLabel.dataset.focusOpacity;
+    }
+
+    function setSurfaceFocus(mode) {
+      const styles = {
+        mid: { mid: 0.94, ask: 0.26, bid: 0.20, midCurve: 0.95, askCurve: 0.78, bidCurve: 0.66 },
+        ask: { mid: 0.84, ask: 0.38, bid: 0.12, midCurve: 0.58, askCurve: 0.96, bidCurve: 0.34 },
+        bid: { mid: 0.84, ask: 0.16, bid: 0.34, midCurve: 0.58, askCurve: 0.34, bidCurve: 0.94 }
+      }[mode];
+      midSurfaceMat.opacity = styles.mid;
+      askSurfaceMat.opacity = styles.ask;
+      bidSurfaceMat.opacity = styles.bid;
+      if (sliceMidCurveLine) sliceMidCurveMat.opacity = styles.midCurve;
+      if (sliceAskCurveLine) sliceAskCurveMat.opacity = styles.askCurve;
+      if (sliceBidCurveLine) sliceBidCurveMat.opacity = styles.bidCurve;
+      applySurfaceFocusToLabels();
+    }
+
+    function updateSurfaceSlice() {
+      [slicePlaneMesh, sliceEdgeLine, sliceMidCurveLine, sliceAskCurveLine, sliceBidCurveLine].forEach((object3d) => {
+        if (!object3d) return;
+        scene.remove(object3d);
+        object3d.geometry.dispose();
+      });
+
+      const planeGeo = buildSlicePlaneGeo(state.activeSliceIndex);
+      slicePlaneMesh = new THREE.Mesh(planeGeo, sliceFillMat);
+      sliceEdgeLine = new THREE.LineSegments(new THREE.EdgesGeometry(planeGeo), sliceEdgeMat);
+      sliceBidCurveLine = new THREE.Line(buildSliceCurveGeo(state.activeSliceIndex, bidData), sliceBidCurveMat);
+      sliceMidCurveLine = new THREE.Line(buildSliceCurveGeo(state.activeSliceIndex, ivData), sliceMidCurveMat);
+      sliceAskCurveLine = new THREE.Line(buildSliceCurveGeo(state.activeSliceIndex, askData), sliceAskCurveMat);
+      scene.add(slicePlaneMesh, sliceEdgeLine, sliceBidCurveLine, sliceMidCurveLine, sliceAskCurveLine);
+      setSurfaceFocus(state.activeMode);
+      renderSurfaceMini();
+    }
+
+    function resizeSurfaceRenderer() {
+      const rect = refs.surfaceStage.getBoundingClientRect();
+      const width = Math.max(1, rect.width);
+      const height = Math.max(1, rect.height);
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    }
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2(-9999, -9999);
+    const markerMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.28, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    markerMesh.visible = false;
+    scene.add(markerMesh);
+
+    renderer.domElement.addEventListener('mousemove', (event) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObject(midSurfaceMesh, false);
+      if (!hits.length || state.activePanel !== 'surface') {
+        markerMesh.visible = false;
+        refs.surfaceTooltip.style.display = 'none';
+        return;
+      }
+      const point = hits[0].point;
+      const col = clamp(Math.round(point.x / SX), 0, COLS - 1);
+      const row = clamp(Math.round(point.z / SZ), 0, ROWS - 1);
+      const values = getPoint(row, col);
+      markerMesh.position.copy(point);
+      markerMesh.visible = true;
+      refs.surfaceTooltipTitle.textContent = `${STRIKE_LABELS[col]} | ${EXPIRY_LABELS[row]}`;
+      refs.surfaceTooltipIv.textContent = formatPct(values.mid);
+      refs.surfaceTooltipBid.textContent = formatPct(values.bid);
+      refs.surfaceTooltipAsk.textContent = formatPct(values.ask);
+      refs.surfaceTooltipSpread.textContent = formatBps(values.spreadBps);
+      refs.surfaceTooltipSpread.style.color = values.spreadBps >= 110
+        ? 'var(--cds-support-error)'
+        : values.spreadBps >= 70
+          ? 'var(--cds-support-warning)'
+          : 'var(--cds-support-success)';
+      refs.surfaceTooltip.style.display = 'block';
+      refs.surfaceTooltip.style.left = `${event.clientX + 18}px`;
+      refs.surfaceTooltip.style.top = `${event.clientY - 22}px`;
+    });
+
+    renderer.domElement.addEventListener('mouseleave', () => {
+      markerMesh.visible = false;
+      refs.surfaceTooltip.style.display = 'none';
+    });
+
+    const labelLayer = document.getElementById('label-layer');
+
+    function initSurfaceLabels() {
+      const createLabel = (id, text, extraCss = '') => {
+        const label = document.createElement('div');
+        label.id = id;
+        label.textContent = text;
+        label.style.cssText = `position:absolute; transform:translate(-50%,-50%); font-family:var(--font-mono); font-size:10px; color:#6f6f6f; white-space:nowrap; pointer-events:none; ${extraCss}`;
+        labelLayer.appendChild(label);
+        return label;
+      };
+
+      STRIKE_LABELS.forEach((label, index) => {
+        if (index % 6 === 0 || index === 17) createLabel(`lbl-s-${index}`, label);
+      });
+      EXPIRY_LABELS.forEach((label, index) => {
+        if (index % 6 === 0) createLabel(`lbl-e-${index}`, label);
+      });
+      [0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.21].forEach((iv) => {
+        const label = createLabel(`lbl-iv-${iv}`, `${(iv * 100).toFixed(0)}%`);
+        label.style.color = '#4589ff';
+      });
+
+      createLabel('lbl-book-ask', 'Ask', 'transform:translate(0,-50%); font-size:10px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:rgba(229,251,255,0.72); text-shadow:0 1px 6px rgba(0,0,0,0.42);');
+      createLabel('lbl-book-mid', 'Mid', 'transform:translate(0,-50%); font-size:10px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:rgba(190,149,255,0.74); text-shadow:0 1px 6px rgba(0,0,0,0.42);');
+      createLabel('lbl-book-bid', 'Bid', 'transform:translate(0,-50%); font-size:10px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:rgba(169,222,255,0.68); text-shadow:0 1px 6px rgba(0,0,0,0.42);');
+      applySurfaceFocusToLabels();
+    }
+
+    function projectToStage(worldVec) {
+      const projected = worldVec.clone().project(camera);
+      const rect = refs.surfaceStage.getBoundingClientRect();
+      return {
+        x: (projected.x + 1) / 2 * rect.width,
+        y: (1 - projected.y) / 2 * rect.height,
+        visible: projected.z < 1 && projected.x > -1.2 && projected.x < 1.2 && projected.y > -1.2 && projected.y < 1.2
+      };
+    }
+
+    function updateSurfaceLabels() {
+      const positionLabel = (element, point) => {
+        if (!element) return;
+        element.style.left = `${point.x}px`;
+        element.style.top = `${point.y}px`;
+      };
+
+      STRIKE_LABELS.forEach((_label, index) => {
+        if (index % 6 === 0 || index === 17) {
+          const element = document.getElementById(`lbl-s-${index}`);
+          const point = projectToStage(new THREE.Vector3(index * SX, -0.6, -1.2));
+          element.style.opacity = point.visible ? '1' : '0';
+          positionLabel(element, point);
+        }
+      });
+
+      EXPIRY_LABELS.forEach((_label, index) => {
+        if (index % 6 === 0) {
+          const element = document.getElementById(`lbl-e-${index}`);
+          const point = projectToStage(new THREE.Vector3(-1.5, -0.6, index * SZ));
+          element.style.opacity = point.visible ? '1' : '0';
+          positionLabel(element, point);
+        }
+      });
+
+      [0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.21].forEach((iv) => {
+        const element = document.getElementById(`lbl-iv-${iv}`);
+        const point = projectToStage(new THREE.Vector3(-1.5, iv * SH, -1.2));
+        element.style.opacity = point.visible ? '1' : '0';
+        positionLabel(element, point);
+      });
+
+      const bookCornerX = (COLS - 1.2) * SX;
+      const bookCornerZ = (ROWS - 1.25) * SZ;
+      const bookRow = ROWS - 2;
+      const bookCol = COLS - 2;
+      const bidAnchor = new THREE.Vector3(bookCornerX, bidData[bookRow][bookCol] * SH + 0.65, bookCornerZ);
+      const midAnchor = new THREE.Vector3(bookCornerX, ivData[bookRow][bookCol] * SH + 0.9, bookCornerZ);
+      const askAnchor = new THREE.Vector3(bookCornerX, askData[bookRow][bookCol] * SH + 1.15, bookCornerZ);
+      [
+        ['lbl-book-ask', askAnchor],
+        ['lbl-book-mid', midAnchor],
+        ['lbl-book-bid', bidAnchor]
+      ].forEach(([id, anchor]) => {
+        const element = document.getElementById(id);
+        const point = projectToStage(anchor);
+        element.style.opacity = point.visible ? (element.dataset.focusOpacity || '1') : '0';
+        positionLabel(element, point);
+      });
+    }
+
+    const surfaceMiniCtx = refs.surfaceMiniCanvas.getContext('2d');
+
+    function renderSurfaceMini() {
+      const rect = refs.surfaceMiniCanvas.getBoundingClientRect();
+      const width = Math.max(220, Math.floor(rect.width || refs.surfaceMiniCanvas.width));
+      const height = Math.max(120, Math.floor(rect.height || refs.surfaceMiniCanvas.height));
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      refs.surfaceMiniCanvas.width = width * dpr;
+      refs.surfaceMiniCanvas.height = height * dpr;
+      surfaceMiniCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      surfaceMiniCtx.clearRect(0, 0, width, height);
+      surfaceMiniCtx.fillStyle = '#1f1f1f';
+      surfaceMiniCtx.fillRect(0, 0, width, height);
+
+      const P = { top: 14, right: 14, bottom: 22, left: 36 };
+      const chartWidth = width - P.left - P.right;
+      const chartHeight = height - P.top - P.bottom;
+      const series = getSliceSeries();
+      const yMin = Math.min(...series.bid) - 0.004;
+      const yMax = Math.max(...series.ask) + 0.004;
+      const toX = (index) => P.left + (index / (ROWS - 1)) * chartWidth;
+      const toY = (value) => P.top + (1 - (value - yMin) / (yMax - yMin)) * chartHeight;
+
+      surfaceMiniCtx.strokeStyle = 'rgba(255,255,255,0.08)';
+      [0.2, 0.5, 0.8].forEach((t) => {
+        const y = P.top + t * chartHeight;
+        surfaceMiniCtx.beginPath();
+        surfaceMiniCtx.moveTo(P.left, y);
+        surfaceMiniCtx.lineTo(width - P.right, y);
+        surfaceMiniCtx.stroke();
+      });
+
+      surfaceMiniCtx.beginPath();
+      surfaceMiniCtx.moveTo(toX(0), toY(series.ask[0]));
+      series.ask.forEach((value, index) => surfaceMiniCtx.lineTo(toX(index), toY(value)));
+      series.bid.slice().reverse().forEach((value, reverseIndex) => {
+        const index = ROWS - 1 - reverseIndex;
+        surfaceMiniCtx.lineTo(toX(index), toY(value));
+      });
+      surfaceMiniCtx.closePath();
+      const fill = surfaceMiniCtx.createLinearGradient(0, P.top, 0, height - P.bottom);
+      fill.addColorStop(0, 'rgba(229,251,255,0.20)');
+      fill.addColorStop(1, 'rgba(169,222,255,0.05)');
+      surfaceMiniCtx.fillStyle = fill;
+      surfaceMiniCtx.fill();
+
+      [
+        { color: '#a9deff', values: series.bid, width: 1.2 },
+        { color: '#e5fbff', values: series.ask, width: 1.2 },
+        { color: '#be95ff', values: series.mid, width: 2.0 }
+      ].forEach((line) => {
+        surfaceMiniCtx.strokeStyle = line.color;
+        surfaceMiniCtx.lineWidth = line.width;
+        surfaceMiniCtx.beginPath();
+        line.values.forEach((value, index) => {
+          const x = toX(index);
+          const y = toY(value);
+          if (index === 0) surfaceMiniCtx.moveTo(x, y);
+          else surfaceMiniCtx.lineTo(x, y);
+        });
+        surfaceMiniCtx.stroke();
+      });
+    }
+
+    function renderSurfacePanel() {
+      const node = getCurrentNode();
+      const hotspotRows = EXPIRY_LABELS.map((expiry, rowIndex) => ({
+        expiry,
+        rowIndex,
+        point: getPoint(rowIndex, state.activeSliceIndex),
+        validation: getSpreadValidation(rowIndex, state.activeSliceIndex)
+      }))
+        .sort((a, b) => b.point.spreadBps - a.point.spreadBps)
+        .slice(0, 3);
+
+      refs.surfaceBookMetrics.innerHTML = renderMiniMetrics([
+        { label: 'Active Node', value: `${node.expiry} / ${node.strike}`, tone: 'info' },
+        { label: 'Mid IV', value: formatPct(node.point.mid), tone: 'good' },
+        { label: 'Bid / Ask', value: `${formatPct(node.point.bid, 2)} | ${formatPct(node.point.ask, 2)}`, tone: 'info' },
+        { label: 'Working Spread', value: formatBps(node.point.spreadBps), tone: node.point.spreadBps >= 110 ? 'alert' : 'warn' }
+      ]);
+
+      refs.surfaceMiniTitle.textContent = `Term structure at ${node.strike}`;
+      refs.surfaceStory.innerHTML = `
+        <div class="card-eyebrow">Trader Story</div>
+        <h3>Spot first, act second</h3>
+        <p class="insight-copy">The desk begins on the layered surface. At ${node.expiry} / ${node.strike}, the current working spread is ${formatBps(node.point.spreadBps)}, which is ${describeSpread(node.point.spreadBps)} versus the nearby curve. That is the cue to inspect, not to edit immediately.</p>
+      `;
+
+      refs.surfaceHotspots.innerHTML = `
+        <div class="card-eyebrow">Hotspots on This Strike</div>
+        <ul>
+          ${hotspotRows.map((entry) => `
+            <li>
+              <strong>${entry.expiry}</strong> at ${formatBps(entry.point.spreadBps)}
+              ${entry.validation.isViolation ? ' with a tolerance flag.' : ' with a tradable band.'}
+            </li>
+          `).join('')}
+        </ul>
+      `;
+
+      refs.surfaceNextStep.innerHTML = `
+        <div class="card-eyebrow">Next Move</div>
+        <p class="insight-copy">Open Inspection to confirm the shape of the term structure at ${node.strike}. The desk only moves to the spread window after the slice and grid agree on the same opportunity.</p>
+        <div class="insight-statline"><span>Current Lens</span><strong>${state.activeMode.toUpperCase()}</strong></div>
+      `;
+
+      renderSurfaceMini();
+    }
+
+    function animateSurface() {
+      requestAnimationFrame(animateSurface);
+      controls.update();
+      updateSurfaceLabels();
+      renderer.render(scene, camera);
+    }
+
+    initSurfaceLabels();
+    resizeSurfaceRenderer();
+    updateSurfaceSlice();
+    setSurfaceFocus(state.activeMode);
+    renderSurfacePanel();
+    animateSurface();
+
+    const wireCheck = document.getElementById('wire-check');
+    if (wireCheck) {
+      wireCheck.addEventListener('change', (event) => {
+        wireEnabled = event.target.checked;
+        document.getElementById('wire-track').classList.toggle('active', wireEnabled);
+        document.getElementById('wire-thumb').classList.toggle('on', wireEnabled);
+        refreshWire();
+      });
+    }
+
+    const floorCheck = document.getElementById('floor-check');
+    if (floorCheck) {
+      floorCheck.addEventListener('change', (event) => {
+        const checked = event.target.checked;
+        document.getElementById('floor-track').classList.toggle('active', checked);
+        document.getElementById('floor-thumb').classList.toggle('on', checked);
+        projectionGroup.visible = checked;
+      });
+    }
+
+    refs.surfaceSlider.addEventListener('input', (event) => {
+      setSliceIndex(Number(event.target.value));
+    });
+
+    document.querySelectorAll('.mode-btn').forEach((button) => {
+      button.addEventListener('click', () => setMode(button.dataset.mode));
+    });
+
+    const sliceCtx = refs.sliceCanvas.getContext('2d');
+    const sliceHoverState = { points: [] };
+
+    function getSliceSeries() {
+      const rowSeries = EXPIRY_LABELS.map((_, row) => getPoint(row, state.activeSliceIndex));
+      return {
+        mid: rowSeries.map((d) => d.mid),
+        bid: rowSeries.map((d) => d.bid),
+        ask: rowSeries.map((d) => d.ask),
+        spread: rowSeries.map((d) => d.spreadBps)
+      };
+    }
+
+    function renderSlicePanel() {
+      const node = getCurrentNode();
+      refs.slicePointCount.textContent = `${ROWS} data points`;
+      const rect = refs.sliceChartShell.getBoundingClientRect();
+      const width = Math.max(320, Math.floor(rect.width - 2));
+      const height = Math.max(320, Math.floor(rect.height - 2));
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      refs.sliceCanvas.width = width * dpr;
+      refs.sliceCanvas.height = height * dpr;
+      refs.sliceCanvas.style.width = `${width}px`;
+      refs.sliceCanvas.style.height = `${height}px`;
+      sliceCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      sliceCtx.clearRect(0, 0, width, height);
+      sliceCtx.fillStyle = '#262626';
+      sliceCtx.fillRect(0, 0, width, height);
+
+      const P = { top: 18, right: 20, bottom: 42, left: 52 };
+      const cW = width - P.left - P.right;
+      const cH = height - P.top - P.bottom;
+      const series = getSliceSeries();
+      const yMin = Math.min(...series.bid) - 0.006;
+      const yMax = Math.max(...series.ask) + 0.006;
+      const median = series.mid.reduce((sum, v) => sum + v, 0) / series.mid.length;
+      const toX = (index) => P.left + (index / (ROWS - 1)) * cW;
+      const toY = (value) => P.top + (1 - (value - yMin) / (yMax - yMin)) * cH;
+
+      sliceCtx.strokeStyle = '#393939';
+      sliceCtx.lineWidth = 1;
+      [0, 0.25, 0.5, 0.75, 1].forEach((t) => {
+        const y = P.top + t * cH;
+        sliceCtx.beginPath();
+        sliceCtx.moveTo(P.left, y);
+        sliceCtx.lineTo(width - P.right, y);
+        sliceCtx.stroke();
+      });
+
+      const hairlineX = toX(node.row);
+      sliceCtx.strokeStyle = 'rgba(244,244,244,0.42)';
+      sliceCtx.lineWidth = 1;
+      sliceCtx.beginPath();
+      sliceCtx.moveTo(hairlineX, P.top);
+      sliceCtx.lineTo(hairlineX, height - P.bottom);
+      sliceCtx.stroke();
+
+      sliceCtx.setLineDash([4, 4]);
+      sliceCtx.strokeStyle = '#6f6f6f';
+      sliceCtx.beginPath();
+      sliceCtx.moveTo(P.left, toY(median));
+      sliceCtx.lineTo(width - P.right, toY(median));
+      sliceCtx.stroke();
+      sliceCtx.setLineDash([]);
+
+      sliceCtx.beginPath();
+      sliceCtx.moveTo(toX(0), toY(series.ask[0]));
+      series.ask.forEach((v, i) => sliceCtx.lineTo(toX(i), toY(v)));
+      series.bid.slice().reverse().forEach((v, idx) => {
+        const i = ROWS - 1 - idx;
+        sliceCtx.lineTo(toX(i), toY(v));
+      });
+      sliceCtx.closePath();
+      const bandGrad = sliceCtx.createLinearGradient(0, P.top, 0, height - P.bottom);
+      bandGrad.addColorStop(0, 'rgba(250,77,86,0.22)');
+      bandGrad.addColorStop(0.5, 'rgba(190,149,255,0.12)');
+      bandGrad.addColorStop(1, 'rgba(66,190,101,0.18)');
+      sliceCtx.fillStyle = bandGrad;
+      sliceCtx.fill();
+
+      sliceCtx.strokeStyle = 'rgba(250,77,86,0.62)';
+      sliceCtx.beginPath();
+      series.ask.forEach((v, i) => {
+        const x = toX(i);
+        const y = toY(v);
+        if (i === 0) sliceCtx.moveTo(x, y);
+        else sliceCtx.lineTo(x, y);
+      });
+      sliceCtx.stroke();
+
+      sliceCtx.strokeStyle = 'rgba(66,190,101,0.72)';
+      sliceCtx.beginPath();
+      series.bid.forEach((v, i) => {
+        const x = toX(i);
+        const y = toY(v);
+        if (i === 0) sliceCtx.moveTo(x, y);
+        else sliceCtx.lineTo(x, y);
+      });
+      sliceCtx.stroke();
+
+      sliceCtx.strokeStyle = '#be95ff';
+      sliceCtx.lineWidth = 2;
+      sliceCtx.beginPath();
+      series.mid.forEach((v, i) => {
+        const x = toX(i);
+        const y = toY(v);
+        if (i === 0) sliceCtx.moveTo(x, y);
+        else sliceCtx.lineTo(x, y);
+      });
+      sliceCtx.stroke();
+      sliceCtx.lineWidth = 1;
+
+      sliceCtx.fillStyle = '#be95ff';
+      sliceHoverState.points = [];
+      series.mid.forEach((v, i) => {
+        const x = toX(i);
+        const y = toY(v);
+        sliceCtx.beginPath();
+        sliceCtx.arc(x, y, 2.5, 0, Math.PI * 2);
+        sliceCtx.fill();
+        sliceHoverState.points.push({ x, y, row: i });
+      });
+
+      sliceCtx.fillStyle = '#6f6f6f';
+      sliceCtx.font = '10px IBM Plex Mono, monospace';
+      sliceCtx.textAlign = 'right';
+      sliceCtx.textBaseline = 'middle';
+      [yMin + 0.01, median, yMax - 0.01].forEach((value) => {
+        sliceCtx.fillText(`${(value * 100).toFixed(1)}%`, P.left - 8, toY(value));
+      });
+
+      sliceCtx.textAlign = 'center';
+      sliceCtx.textBaseline = 'top';
+      EXPIRY_LABELS.forEach((label, i) => {
+        if (i % 4 === 0 || i === ROWS - 1) {
+          sliceCtx.fillText(label, toX(i), height - P.bottom + 8);
+        }
+      });
+
+      const hairlineY = toY(node.point.mid);
+      const pillWidth = 74;
+      const pillHeight = 22;
+      const pillX = Math.min(width - P.right - pillWidth, Math.max(P.left, hairlineX + 10));
+      const pillY = Math.max(P.top + 6, hairlineY - 30);
+      sliceCtx.fillStyle = 'rgba(244,244,244,0.94)';
+      sliceCtx.fillRect(pillX, pillY, pillWidth, pillHeight);
+      sliceCtx.fillStyle = '#3d3d3d';
+      sliceCtx.font = '11px IBM Plex Mono, monospace';
+      sliceCtx.textAlign = 'center';
+      sliceCtx.textBaseline = 'middle';
+      sliceCtx.fillText(`${node.expiry}`, pillX + pillWidth / 2, pillY + 11);
+
+      const frontMid = series.mid[0];
+      const backMid = series.mid[ROWS - 1];
+      const termSlope = (backMid - frontMid) * 10000;
+      refs.sliceSummaryCard.innerHTML = `
+        <div class="card-eyebrow">Inspection Summary</div>
+        <h3>${node.strike} curve across all expiries</h3>
+        <p class="insight-copy">The selected strike stays pinned while the trader checks whether the surface cue is local noise or a real structure break. ${node.expiry} is currently reading ${formatPct(node.point.mid)} mid with a ${formatBps(node.point.spreadBps)} working spread.</p>
+        <div class="mini-metric-grid">
+          <div class="mini-metric info"><span>Front</span><strong>${formatPct(frontMid, 2)}</strong></div>
+          <div class="mini-metric info"><span>Back</span><strong>${formatPct(backMid, 2)}</strong></div>
+        </div>
+      `;
+      refs.sliceTraderReadCard.innerHTML = `
+        <div class="card-eyebrow">Trader Read</div>
+        <div class="insight-statline"><span>Term Slope</span><strong>${formatSignedBps(termSlope)}</strong></div>
+        <div class="insight-statline"><span>Flags on Strike</span><strong>${countSliceViolations()}</strong></div>
+        <p class="insight-copy">The band between BID and ASK shows the transaction cost pocket. The desk now knows where the curve is steep, where liquidity is thin, and whether the selected node still looks actionable once projected into 2D.</p>
+      `;
+      refs.sliceNextCard.innerHTML = `
+        <div class="card-eyebrow">Next Move</div>
+        <p class="insight-copy">This combined screen already carries both the precise curve and the factual grid. From here the prototype jumps directly to the spread-window layout, keeping the story simple and visually focused.</p>
+        <div class="insight-statline"><span>Carry Forward</span><strong>${node.expiry} / ${node.strike}</strong></div>
+      `;
+    }
+
+    refs.sliceCanvas.addEventListener('mousemove', (event) => {
+      if (state.activePanel !== 'slice') return;
+      const rect = refs.sliceCanvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      let nearest = null;
+      let nearestDistance = Infinity;
+      sliceHoverState.points.forEach((point) => {
+        const distance = Math.hypot(point.x - x, point.y - y);
+        if (distance < nearestDistance) {
+          nearest = point;
+          nearestDistance = distance;
+        }
+      });
+      if (!nearest || nearestDistance > 12) {
+        refs.sliceTooltip.style.display = 'none';
+        return;
+      }
+      const values = getPoint(nearest.row, state.activeSliceIndex);
+      refs.sliceTooltipTitle.textContent = `${EXPIRY_LABELS[nearest.row]} | ${STRIKE_LABELS[state.activeSliceIndex]}`;
+      refs.sliceTooltipMid.textContent = formatPct(values.mid);
+      refs.sliceTooltipBid.textContent = formatPct(values.bid);
+      refs.sliceTooltipAsk.textContent = formatPct(values.ask);
+      refs.sliceTooltipSpread.textContent = formatBps(values.spreadBps);
+      refs.sliceTooltip.style.display = 'block';
+      refs.sliceTooltip.style.left = `${event.clientX + 18}px`;
+      refs.sliceTooltip.style.top = `${event.clientY - 22}px`;
+    });
+
+    refs.sliceCanvas.addEventListener('mouseleave', () => {
+      refs.sliceTooltip.style.display = 'none';
+    });
+
+    function renderTablePanel() {
+      const visibleCols = getVisibleTableCols();
+      const visibleRows = getVisibleTableRows();
+      const header = visibleCols.map((col) => {
+        const isActive = col === state.activeSliceIndex;
+        return `<th class="${isActive ? 'active-slice' : ''}">${STRIKE_LABELS[col]}</th>`;
+      }).join('');
+
+      const rows = visibleRows.map((rowIndex) => {
+        const label = EXPIRY_LABELS[rowIndex];
+        const cells = visibleCols.map((colIndex) => {
+          const point = getPoint(rowIndex, colIndex);
+          const validation = getSpreadValidation(rowIndex, colIndex);
+          const isActive = colIndex === state.activeSliceIndex;
+          const isSelected = state.selectedCell?.row === rowIndex && state.selectedCell?.col === colIndex;
+          const classes = [
+            isActive ? 'active-slice' : '',
+            isSelected ? 'selected' : '',
+            validation.isViolation ? 'violation-cell' : ''
+          ].join(' ');
+          const cellStyle = [
+            `background:${spreadToCss(spreadData[rowIndex][colIndex], 0.20)};`,
+            isActive ? 'box-shadow:inset 0 0 0 999px rgba(190,149,255,0.08);' : ''
+          ].join('');
+          return `
+            <td
+              class="${classes.trim()}"
+              data-row="${rowIndex}"
+              data-col="${colIndex}"
+              style="${cellStyle}"
+            >
+              ${(point.mid * 100).toFixed(2)}%
+              ${validation.isViolation ? '<span class="violation-dot"></span>' : ''}
+            </td>
+          `;
+        }).join('');
+        return `<tr><td class="row-head">${label}</td>${cells}</tr>`;
+      }).join('');
+
+      refs.dataGrid.innerHTML = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="row-head">Expiry</th>
+              ${header}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderSpreadPanel() {
+      const currentCol = state.activeSliceIndex;
+      const node = getCurrentNode();
+      const rows = EXPIRY_LABELS.map((label, rowIndex) => {
+        const point = getPoint(rowIndex, currentCol);
+        const base = getBasePoint(rowIndex, currentCol);
+        const validation = getSpreadValidation(rowIndex, currentCol);
+        const delta = (point.mid - base.mid) * 10000;
+        const rowClass = [
+          'spread-row',
+          state.selectedCell?.row === rowIndex ? 'selected' : '',
+          validation.isViolation ? 'violation-row' : ''
+        ].join(' ');
+
+        return `
+          <tr id="spread-row-${rowIndex}" class="${rowClass.trim()}">
+            <td class="mono">${label}</td>
+            <td class="numeric mono">${formatPct(point.bid)}</td>
+            <td class="numeric mono">${formatPct(point.mid)}</td>
+            <td class="numeric mono">${formatPct(point.ask)}</td>
+            <td class="numeric mono">${formatBps(point.spreadBps)}</td>
+            <td class="numeric mono ${validation.isViolation ? 'violation-cell' : ''}">
+              ${delta >= 0 ? '+' : ''}${delta.toFixed(1)}
+              ${validation.isViolation ? ' &#128308;' : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      refs.spreadTable.innerHTML = `
+        <table class="spread-table">
+          <thead>
+            <tr>
+              <th>Expiry</th>
+              <th>Bid</th>
+              <th>Mid</th>
+              <th>Ask</th>
+              <th>Spread</th>
+              <th>Delta</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+
+      const row = state.selectedCell?.row ?? 3;
+      const point = getPoint(row, currentCol);
+      refs.spreadInspector.innerHTML = `
+        <div class="inspector-label">Read-only Prototype</div>
+        <strong>${EXPIRY_LABELS[row]} Bid: ${formatPct(point.bid)} | Ask: ${formatPct(point.ask)}</strong>
+        <p>This screen preserves the spread-window composition from the wireframes, but the cells are intentionally not editable in this simplified prototype.</p>
+      `;
+
+      const selectedRow = state.selectedCell?.row ?? 3;
+      const selectedPoint = getPoint(selectedRow, currentCol);
+      const selectedValidation = getSpreadValidation(selectedRow, currentCol);
+      refs.spreadLadderCard.innerHTML = `
+        <div class="card-eyebrow">Ladder Context</div>
+        <h3>${STRIKE_LABELS[currentCol]} spread ladder</h3>
+        <p class="insight-copy">The spread window keeps the selected strike fixed and lets the trader read the term ladder. Each row is 1 expiry at the same strike, matching the original mercantile-exchange composition without full editing controls.</p>
+        <div class="insight-statline"><span>Selected Row</span><strong>${EXPIRY_LABELS[selectedRow]}</strong></div>
+      `;
+      refs.spreadActivityCard.innerHTML = `
+        <div class="card-eyebrow">Working State</div>
+        <div class="insight-statline"><span>Prototype Mode</span><strong>Read-only</strong></div>
+        <div class="insight-statline"><span>Selected Spread</span><strong>${formatBps(selectedPoint.spreadBps)}</strong></div>
+        <p class="insight-copy">The view now acts as a staged layout review rather than a trading tool. It keeps the professional flow intact without full data editing behavior.</p>
+      `;
+      refs.spreadValidationCard.innerHTML = `
+        <div class="card-eyebrow">Validation</div>
+        <div class="insight-statline"><span>Status</span><strong>${selectedValidation.isViolation ? 'Review required' : 'Desk-safe'}</strong></div>
+        <div class="insight-statline"><span>Current Delta</span><strong>${formatSignedBps((selectedPoint.mid - getBasePoint(selectedRow, currentCol).mid) * 10000)}</strong></div>
+        <p class="insight-copy">${selectedValidation.errors.length ? selectedValidation.errors.join(' ') : 'The current row remains inside the supported tolerance band.'}</p>
+      `;
+      refs.spreadPublishCard.innerHTML = `
+        <div class="card-eyebrow">From Spread to Strategy</div>
+        <p class="insight-copy">In the real product this is where intervention would turn into application. In this prototype the next screen simply presents the strategy package built from the same node.</p>
+        <div class="insight-statline"><span>Carry Forward</span><strong>${node.expiry} / ${node.strike}</strong></div>
+      `;
+    }
+
+    function scrollSpreadToSelectedRow() {
+      const row = state.selectedCell?.row;
+      if (row === undefined || row === null) return;
+      const target = document.getElementById(`spread-row-${row}`);
+      if (target) target.scrollIntoView({ block: 'center' });
+    }
+
+    function cloneStrategyFromAnalysis() {
+      const row = state.selectedCell?.row ?? 3;
+      state.strategyLegs = createDefaultStrategy(row, state.activeSliceIndex);
+      renderStrategyPanel();
+    }
+
+    function getLegMetrics(leg) {
+      const point = getPoint(leg.expiryIndex, leg.strikeIndex);
+      return {
+        ...point,
+        spread: formatBps(point.spreadBps)
+      };
+    }
+
+    function detectStrategyType(legs) {
+      if (!legs.length) return 'No Strategy';
+      if (legs.length === 1) return 'Single Leg';
+      if (legs.length === 2) return 'Vertical Spread';
+      if (legs.length === 3) {
+        const ordered = [...legs].sort((a, b) => a.strikeIndex - b.strikeIndex);
+        const symmetric = ordered[1].strikeIndex - ordered[0].strikeIndex === ordered[2].strikeIndex - ordered[1].strikeIndex;
+        const sameExpiry = ordered.every((leg) => leg.expiryIndex === ordered[0].expiryIndex);
+        const qtyPattern = ordered[0].qty === 1 && ordered[1].qty === -2 && ordered[2].qty === 1;
+        if (symmetric && sameExpiry && qtyPattern) return 'Butterfly Spread';
+      }
+      return 'Custom Multi-Leg';
+    }
+
+    function computeStrategyNet(legs) {
+      return legs.reduce((sum, leg) => {
+        const point = getPoint(leg.expiryIndex, leg.strikeIndex);
+        return sum + (point.mid - 0.12) * leg.qty * 35;
+      }, 0);
+    }
+
+    function renderStrategyPanel() {
+      const node = getCurrentNode();
+      const cards = state.strategyLegs.map((leg, index) => {
+        const metrics = getLegMetrics(leg);
+        return `
+          <div class="strategy-card">
+            <div class="strategy-card-head">
+              <div class="strategy-card-title">Leg ${index + 1}</div>
+            </div>
+
+            <div class="strategy-grid">
+              <div class="strategy-field">
+                <label>Type</label>
+                <div class="strategy-readout">${leg.type}</div>
+              </div>
+
+              <div class="strategy-field">
+                <label>Strike</label>
+                <div class="strategy-readout">${STRIKE_LABELS[leg.strikeIndex]}</div>
+              </div>
+
+              <div class="strategy-field">
+                <label>Expiry</label>
+                <div class="strategy-readout">${EXPIRY_LABELS[leg.expiryIndex]}</div>
+              </div>
+
+              <div class="strategy-field">
+                <label>Quantity</label>
+                <div class="strategy-readout mono">${leg.qty > 0 ? '+' : ''}${leg.qty}</div>
+              </div>
+            </div>
+
+            <div class="strategy-metrics">
+              <div class="strategy-metric">
+                <span>IV Mid</span>
+                <strong>${formatPct(metrics.mid)}</strong>
+              </div>
+              <div class="strategy-metric">
+                <span>Bid</span>
+                <strong>${formatPct(metrics.bid)}</strong>
+              </div>
+              <div class="strategy-metric">
+                <span>Ask</span>
+                <strong>${formatPct(metrics.ask)}</strong>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const strategyType = detectStrategyType(state.strategyLegs);
+      const strategyNet = computeStrategyNet(state.strategyLegs);
+      refs.strategyLegs.innerHTML = cards || '<div class="strategy-empty">No legs are staged. Clone the current analysis state or add a leg manually to continue the desk workflow.</div>';
+      refs.strategyType.textContent = strategyType;
+      refs.strategyNet.textContent = strategyNet.toFixed(2);
+      refs.strategyCount.textContent = String(state.strategyLegs.length);
+      refs.strategyChainCard.innerHTML = `
+        <div class="card-eyebrow">Chain Anchor</div>
+        <h3>${node.expiry} / ${node.strike}</h3>
+        <p class="insight-copy">The strategy inherits the same node that survived the surface, slice, grid, and spread checks. This keeps the professional move continuous from discovery to action.</p>
+        <div class="insight-statline"><span>Anchor Mid</span><strong>${formatPct(node.point.mid)}</strong></div>
+      `;
+      refs.strategyWatchlistCard.innerHTML = `
+        <div class="card-eyebrow">Builder Summary</div>
+        <div class="insight-statline"><span>Type</span><strong>${strategyType}</strong></div>
+        <div class="insight-statline"><span>Legs</span><strong>${state.strategyLegs.length}</strong></div>
+        <div class="insight-statline"><span>Net</span><strong>${strategyNet.toFixed(2)}</strong></div>
+        <p class="insight-copy">The strategy wizard is shown here as a presentation-quality summary rather than a full builder. It keeps the original visual narrative without exposing every business control.</p>
+      `;
+      refs.strategySubmitCard.innerHTML = `
+        <div class="card-eyebrow">Final Step</div>
+        <p class="insight-copy">This closes the professional move: spotted on the surface, confirmed in the combined 2D and grid view, reviewed in the spread window, then staged as a strategy package.</p>
+        <div class="insight-statline"><span>Ready</span><strong>Presentation state</strong></div>
+      `;
+    }
+
+    const TOUR_STEPS = [
+      {
+        panel: 'surface',
+        title: '3-Layer Market Surface',
+        body: 'The surface now uses the ASK, MID, and BID stack from the dedicated market-book prototype. A trader starts here to spot a working dislocation in context, not to edit values blindly.',
+        target: '#surface-stage',
+        position: 'left'
+      },
+      {
+        panel: 'surface',
+        title: 'Pinned Strike Selection',
+        body: 'The slice control cuts the layered surface at 1 strike. That exact strike becomes the shared key for inspection, verification, spread editing, and the eventual strategy.',
+        target: '#slice-slider',
+        position: 'top'
+      },
+      {
+        panel: 'slice',
+        title: 'Combined 2D + Grid',
+        body: 'The top half gives the precise curve read for the selected strike, turning the surface cue into a clean 2D term-structure view the desk can inspect quickly.',
+        target: '#slice-canvas',
+        position: 'bottom'
+      },
+      {
+        panel: 'slice',
+        title: 'Grid Companion',
+        body: 'The bottom half anchors the same strike with exact values, so visual shape and factual pricing stay together in 1 inspection screen.',
+        target: '#data-grid',
+        position: 'left'
+      },
+      {
+        panel: 'spread',
+        title: 'Spread Window Layout',
+        body: 'The same strike now carries into the spread window, where the ladder is reviewed across expiries in the original intervention-style layout.',
+        target: '#spread-table',
+        position: 'left'
+      },
+      {
+        panel: 'spread',
+        title: 'Intervention Context',
+        body: 'The selected strike stays aligned across expiries so the trader can review the intended intervention step before moving into the final strategy package.',
+        target: '#spread-edit-demo',
+        position: 'top'
+      },
+      {
+        panel: 'strategy',
+        title: 'Strategy Wizard',
+        body: 'The final screen shows the strategy package in a normal form-like layout, with each leg inheriting the same market context carried through the previous views.',
+        target: '#strategy-legs',
+        position: 'left'
+      },
+      {
+        panel: 'strategy',
+        title: 'Desk-Ready Package',
+        body: 'This closes the intended Mercantile Exchange story: spotted on the surface, verified through the workspace, reviewed in the spread window, then staged as a desk-ready strategy package.',
+        target: '#strategy-summary-strip',
+        position: 'top'
+      }
+    ];
+
+    let pendingTourFrame = null;
+
+    function clearHighlights() {
+      document.querySelectorAll('.tour-highlight, .tour-highlight-intro').forEach((el) => {
+        el.classList.remove('tour-highlight', 'tour-highlight-intro');
+      });
+      refs.tourTooltip.classList.remove('intro-step');
+    }
+
+    function positionTourTooltip(target, position) {
+      const rect = target.getBoundingClientRect();
+      const tooltipRect = refs.tourTooltip.getBoundingClientRect();
+      let left = 0;
+      let top = 0;
+      switch (position) {
+        case 'left':
+          left = rect.left - tooltipRect.width - 16;
+          top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+          break;
+        case 'right':
+          left = rect.right + 16;
+          top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+          break;
+        case 'top':
+          left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+          top = rect.top - tooltipRect.height - 16;
+          break;
+        default:
+          left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+          top = rect.bottom + 16;
+          break;
+      }
+      left = Math.max(8, Math.min(window.innerWidth - tooltipRect.width - 8, left));
+      top = Math.max(8, Math.min(window.innerHeight - tooltipRect.height - 8, top));
+      refs.tourTooltip.style.left = `${left}px`;
+      refs.tourTooltip.style.top = `${top}px`;
+    }
+
+    function endTour() {
+      state.tourActive = false;
+      clearHighlights();
+      refs.tourTooltip.classList.remove('open');
+      refs.tourTooltip.style.display = 'none';
+      syncEmbedHeight();
+    }
+
+    function showTourStep(index) {
+      const step = TOUR_STEPS[index];
+      if (!step) {
+        endTour();
+        return;
+      }
+      switchPanel(step.panel);
+      clearTimeout(pendingTourFrame);
+      pendingTourFrame = setTimeout(() => {
+        const target = document.querySelector(step.target);
+        if (!target) {
+          endTour();
+          return;
+        }
+        clearHighlights();
+        target.classList.add('tour-highlight');
+        if (index === 0) {
+          target.classList.add('tour-highlight-intro');
+          refs.tourTooltip.classList.add('intro-step');
+        }
+        if (typeof target.scrollIntoView === 'function') {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        }
+        refs.tourTooltip.style.display = 'block';
+        refs.tourTooltip.classList.add('open');
+        refs.tourStepNumber.textContent = String(index + 1);
+        refs.tourTitle.textContent = step.title;
+        refs.tourBody.textContent = step.body;
+        refs.tourPrev.style.display = index === 0 ? 'none' : 'inline-flex';
+        refs.tourNext.textContent = index === TOUR_STEPS.length - 1 ? 'Finish' : 'Next →';
+        refs.tourProgress.style.width = `${((index + 1) / TOUR_STEPS.length) * 100}%`;
+        positionTourTooltip(target, step.position);
+        syncEmbedHeight();
+      }, 300);
+    }
+
+    function startTour() {
+      state.tourActive = true;
+      state.tourStep = 0;
+      showTourStep(0);
+    }
+
+    const startTourBtn = document.getElementById('start-tour-btn');
+    if (startTourBtn) startTourBtn.addEventListener('click', startTour);
+    refs.tourNext.addEventListener('click', () => {
+      state.tourStep += 1;
+      if (state.tourStep >= TOUR_STEPS.length) endTour();
+      else showTourStep(state.tourStep);
+    });
+    refs.tourPrev.addEventListener('click', () => {
+      state.tourStep = Math.max(0, state.tourStep - 1);
+      showTourStep(state.tourStep);
+    });
+    refs.tourSkip.addEventListener('click', endTour);
+
+    refs.tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        if (state.tourActive) endTour();
+        switchPanel(tab.dataset.panel);
+      });
+    });
+
+    window.addEventListener('resize', () => {
+      resizeSurfaceRenderer();
+      renderSurfaceMini();
+      renderSlicePanel();
+      renderTablePanel();
+      if (state.tourActive) showTourStep(state.tourStep);
+      syncEmbedHeight();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      const target = event.target;
+      const isFormField = target instanceof HTMLElement && (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT'
+      );
+
+      if (event.key === 'Escape') {
+        hideDataTooltips();
+        if (state.tourActive) {
+          event.preventDefault();
+          endTour();
+          return;
+        }
+        if (state.editingSpreadCell) {
+          cancelSpreadEdit();
+          return;
+        }
+      }
+
+      if (isFormField) return;
+
+      if (/^[1-4]$/.test(event.key)) {
+        const panelMap = ['surface', 'slice', 'spread', 'strategy'];
+        switchPanel(panelMap[Number(event.key) - 1]);
+      }
+
+      if (event.key.toLowerCase() === 't') {
+        event.preventDefault();
+        startTour();
+      }
+
+      if (state.activePanel === 'surface' && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+        event.preventDefault();
+        const delta = event.key === 'ArrowLeft' ? -1 : 1;
+        setSliceIndex(state.activeSliceIndex + delta);
+      }
+    });
+
+    const flatIV = ivData.flat();
+    const ivMin = Math.min(...flatIV).toFixed(4);
+    const ivMax = Math.max(...flatIV).toFixed(4);
+    const ivMean = (flatIV.reduce((sum, value) => sum + value, 0) / flatIV.length).toFixed(4);
+    console.log(`Data Layer ready: ${ROWS}x${COLS} = ${ROWS * COLS} points`);
+    console.log(`IV range ${ivMin}-${ivMax}, mean ${ivMean}`);
+
+    updateContextBar();
+    renderWorkspaceRail();
+    renderSurfacePanel();
+    renderSlicePanel();
+    renderTablePanel();
+    renderSpreadPanel();
+    renderStrategyPanel();
+    syncEmbedHeight();
+  </script>
+</body>
+<script>'undefined'=== typeof _trfq || (window._trfq = []);'undefined'=== typeof _trfd && (window._trfd=[]),_trfd.push({'tccl.baseHost':'secureserver.net'},{'ap':'cpsh-oh'},{'server':'p3plzcpnl504863'},{'dcenter':'p3'},{'cp_id':'10904367'},{'cp_cl':'8'}) // Monitoring performance to make your website faster. If you want to opt-out, please contact web hosting support.</script><script src='https://img1.wsimg.com/traffic-assets/js/tccl.min.js'></script></html>

@@ -1,1 +1,3398 @@
-<!doctype html><meta charset="utf-8"><title>clinical-benchmark</title><p>Prototype source pending. Live case study: <a href="https://siarheimardovich.com/clinical-benchmark/">siarheimardovich.com/clinical-benchmark/</a></p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clinical Benchmark Command Center</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #101317;
+  --bg-alt: #14191e;
+  --surface: #1a2026;
+  --surface-strong: #202730;
+  --surface-soft: #161c22;
+  --border: #2f3842;
+  --border-strong: #55616d;
+  --text: #f2f0ec;
+  --muted: #c3bbb2;
+  --muted-2: #989086;
+  --accent: #f2f0ec;
+  --accent-strong: #ffffff;
+  --accent-soft: #232b33;
+  --accent-cool: #8eaabc;
+  --green: #67b285;
+  --amber: #d0b36f;
+  --red: #d78380;
+  --blue: #86aac6;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 18px 40px rgba(0, 0, 0, 0.34);
+  --radius: 20px;
+  --radius-sm: 14px;
+  --grid-gap: 18px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  font-family: "Google Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  background: linear-gradient(180deg, #0f1317 0%, #151a20 100%);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+select {
+  font: inherit;
+}
+
+button,
+select,
+.alert-item,
+.cohort-row {
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease, opacity 140ms ease;
+}
+
+button:focus-visible,
+select:focus-visible,
+.alert-item:focus-visible,
+.cohort-row:focus-visible {
+  outline: 3px solid rgba(242, 240, 236, 0.34);
+  outline-offset: 2px;
+}
+
+.shell {
+  width: min(1520px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 18px 0 34px;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  gap: 12px;
+  padding: 14px 18px 16px;
+  margin-bottom: 18px;
+  background: rgba(20, 25, 30, 0.94);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.topbar-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brand {
+  min-width: 0;
+}
+
+.brand-copy {
+  min-width: 0;
+}
+
+.brand h1 {
+  font-size: 19px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.brand p {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.filter-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.control span {
+  font-size: 12px;
+  color: var(--muted-2);
+  white-space: nowrap;
+}
+
+.control select,
+.ghost-btn {
+  min-height: 36px;
+  border-radius: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+}
+
+.control select {
+  padding-right: 12px;
+  min-width: 136px;
+}
+
+.ghost-btn {
+  cursor: pointer;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.demo-toggle {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.demo-toggle.active {
+  border-color: rgba(142, 170, 188, 0.38);
+  background: linear-gradient(180deg, rgba(43, 54, 64, 0.96), rgba(28, 37, 44, 0.96));
+  box-shadow: inset 0 0 0 1px rgba(142, 170, 188, 0.14);
+}
+
+.ghost-btn:hover,
+.control:hover {
+  border-color: var(--border-strong);
+}
+
+.filter-summary {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.burnout-toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 40;
+  width: min(420px, calc(100vw - 24px));
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(215, 131, 128, 0.36);
+  background: linear-gradient(108deg, rgba(84, 35, 35, 0.95), rgba(33, 19, 19, 0.96));
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.42);
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.burnout-toast.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.burnout-toast-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.burnout-toast-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #f1b4b1;
+  font-weight: 700;
+}
+
+.burnout-toast-severity {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffe8e7;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.burnout-toast-body {
+  margin-top: 8px;
+}
+
+.burnout-toast-body p {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.burnout-toast-body span {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #dfd5cc;
+}
+
+.burnout-toast-close {
+  margin-top: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.briefing-toast {
+  position: fixed;
+  top: 6px;
+  left: 50%;
+  z-index: 34;
+  width: min(380px, calc(100vw - 20px));
+  padding: 10px 12px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(142, 170, 188, 0.28);
+  background: linear-gradient(180deg, rgba(31, 39, 47, 0.96), rgba(24, 30, 37, 0.98));
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -10px) scale(0.98);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.briefing-toast.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.briefing-toast-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.briefing-toast-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-cool);
+}
+
+.briefing-toast-step {
+  font-size: 10px;
+  color: var(--muted-2);
+}
+
+.briefing-toast-body {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.briefing-toast-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.briefing-toast-btn {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  border-radius: 9px;
+  padding: 5px 9px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.briefing-toast-btn.primary {
+  color: var(--text);
+  border-color: rgba(142, 170, 188, 0.26);
+  background: rgba(142, 170, 188, 0.08);
+}
+
+.kpi {
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  min-height: 74px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 14px;
+  text-align: left;
+}
+
+.kpi-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: lowercase;
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+  margin: 0;
+  min-width: 40px;
+}
+
+.kpi-sub {
+  font-size: 11px;
+  color: var(--muted-2);
+  text-transform: lowercase;
+}
+
+.kpi-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 1.42fr 1.16fr 0.82fr;
+  gap: var(--grid-gap);
+  align-items: start;
+}
+
+.workspace-card {
+  grid-column: 1 / span 2;
+  padding: 16px;
+}
+
+.alert-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 560px;
+}
+
+.alert-card,
+.verify-card,
+.trend-card,
+.gap-card {
+  padding: 14px;
+}
+
+.scatter-card,
+.benchmark-card,
+.table-card {
+  padding: 16px;
+}
+
+.table-card {
+  grid-column: 1 / span 3;
+}
+
+.verify-card {
+  grid-row: span 2;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+}
+
+.gap-card {
+  align-self: stretch;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.card-head h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.card-copy {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--accent-soft);
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.pc-wrap {
+  position: relative;
+  min-height: 412px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+#pcCanvas {
+  display: block;
+  width: 100%;
+  height: 412px;
+  touch-action: none;
+}
+
+#pcLabels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.axis-label,
+.axis-tick {
+  position: absolute;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.axis-label {
+  bottom: 16px;
+  width: 92px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.benchmark-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.legend-swatch {
+  width: 18px;
+  height: 0;
+  border-top-width: 2px;
+  border-top-style: solid;
+}
+
+.legend-swatch.target {
+  border-top-color: rgba(103, 178, 133, 0.92);
+  border-top-style: dashed;
+}
+
+.legend-swatch.mean {
+  border-top-color: rgba(134, 170, 198, 0.9);
+}
+
+.legend-swatch.selection {
+  border-top-color: rgba(242, 240, 236, 0.72);
+}
+
+.axis-tick {
+  font-size: 12px;
+  color: var(--muted-2);
+  text-align: left;
+  width: auto;
+}
+
+.workspace-foot {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.chart-frame {
+  min-height: 280px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  overflow: hidden;
+  position: relative;
+}
+
+.chart-frame svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-size: 12px;
+}
+
+.chart-frame svg * {
+  font-size: 12px !important;
+}
+
+.alert-feed {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  gap: 10px;
+  max-height: none;
+  overflow-y: auto;
+  padding-right: 6px;
+  overscroll-behavior: contain;
+}
+
+.alert-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 12px 10px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  color: var(--text);
+  cursor: pointer;
+  animation: alertTileIn 320ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+.alert-item:hover {
+  border-color: var(--border-strong);
+}
+
+.alert-item.active {
+  border-color: rgba(242, 240, 236, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.alert-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 7px;
+}
+
+.alert-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 23px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sev-critical {
+  background: rgba(183, 75, 73, 0.12);
+  color: var(--red);
+}
+
+.sev-high {
+  background: rgba(166, 102, 20, 0.12);
+  color: var(--amber);
+}
+
+.sev-medium {
+  background: rgba(86, 122, 147, 0.12);
+  color: var(--blue);
+}
+
+.sev-low {
+  background: rgba(47, 125, 87, 0.12);
+  color: var(--green);
+}
+
+.alert-meta,
+.alert-copy {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.alert-copy {
+  margin-top: 7px;
+}
+
+.verify-shell {
+  display: grid;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;
+  overscroll-behavior: contain;
+}
+
+.verify-hero {
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.verify-hero h4 {
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.verify-hero p {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.evidence-card {
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.evidence-card strong {
+  display: block;
+  font-size: 12px;
+  color: var(--muted-2);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+
+.evidence-card span {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.evidence-list {
+  display: grid;
+  gap: 8px;
+}
+
+.evidence-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.evidence-row span:last-child {
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+  color: var(--text);
+}
+
+.cohort-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.table-scroll {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.cohort-table thead th {
+  padding: 12px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--border);
+}
+
+.cohort-table tbody td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.cohort-row {
+  cursor: default;
+}
+
+.cohort-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.cohort-row.highlight {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.cohort-row.hovered {
+  background: rgba(134, 170, 198, 0.14);
+}
+
+.cohort-table thead th:nth-child(n + 3),
+.cohort-table td.numeric {
+  text-align: center;
+}
+
+.cohort-table td.risk-cell {
+  font-weight: 600;
+}
+
+.clinician-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.clinician-id {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted-2);
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+.risk-critical {
+  color: var(--red);
+}
+
+.risk-high {
+  color: var(--amber);
+}
+
+.risk-medium {
+  color: var(--blue);
+}
+
+.risk-low {
+  color: var(--green);
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 100;
+  max-width: 220px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(20, 25, 30, 0.96);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.36);
+  color: var(--text);
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 100ms ease, transform 100ms ease;
+}
+
+.tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tooltip strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.tooltip span {
+  color: var(--muted);
+}
+
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.alert-feed,
+.verify-shell {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(152, 160, 170, 0.48) transparent;
+}
+
+.alert-feed::-webkit-scrollbar,
+.verify-shell::-webkit-scrollbar {
+  width: 8px;
+}
+
+.alert-feed::-webkit-scrollbar-track,
+.verify-shell::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.alert-feed::-webkit-scrollbar-thumb,
+.verify-shell::-webkit-scrollbar-thumb {
+  background: rgba(152, 160, 170, 0.42);
+  border-radius: 999px;
+}
+
+@keyframes alertReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes alertTileIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1200px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-card,
+  .table-card,
+  .verify-card {
+    grid-column: auto;
+  }
+
+  .verify-card {
+    grid-row: auto;
+  }
+
+  .kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width: 760px) {
+  .shell {
+    width: min(100vw - 18px, 100%);
+    padding-top: 8px;
+  }
+
+  .control,
+  .filter-summary,
+  .ghost-btn {
+    width: 100%;
+  }
+
+  .filter-summary {
+    margin-left: 0;
+  }
+
+  .filter-line {
+    align-items: stretch;
+  }
+
+  .workspace-card,
+  .alert-card,
+  .verify-card,
+  .trend-card,
+  .gap-card,
+  .scatter-card,
+  .benchmark-card,
+  .table-card {
+    padding: 18px;
+  }
+
+  .kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-foot,
+  .card-head {
+    flex-direction: column;
+  }
+
+  .topbar-head {
+    flex-direction: column;
+  }
+
+  .demo-toggle {
+    margin-left: 0;
+  }
+
+
+  .evidence-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .burnout-toast {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: auto;
+  }
+
+  .cohort-table {
+    min-width: 760px;
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+  }
+}
+</style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="topbar-head">
+        <div class="brand">
+          <div class="brand-copy">
+            <h1>Clinical Benchmark Command Center</h1>
+          </div>
+        </div>
+        <button class="ghost-btn demo-toggle active" id="demoToggleBtn" type="button" aria-pressed="true">Stop Demo</button>
+      </div>
+      <div class="filter-line">
+        <label class="control">
+          <span>Preset</span>
+          <select id="scenarioSelect"></select>
+        </label>
+        <label class="control">
+          <span>Service</span>
+          <select id="serviceSelect"></select>
+        </label>
+        <button class="ghost-btn" id="resetBtn" type="button">Reset all filters</button>
+        <div class="filter-summary" id="filterSummary">Baseline review · All services · 72 clinicians in scope</div>
+      </div>
+    </header>
+
+    <section class="kpis" id="kpiRow"></section>
+
+    <section class="main-grid">
+      <article class="card workspace-card">
+        <div class="card-head">
+          <div>
+            <h3>Benchmark comparison engine</h3>
+            <div class="card-copy">Brush the cohort against the service mean and review target.</div>
+          </div>
+          <div class="card-badge" id="workspaceBadge">72 clinicians · target + mean overlays</div>
+        </div>
+        <div class="benchmark-legend">
+          <span class="legend-item"><span class="legend-swatch target"></span>Clinical review target</span>
+          <span class="legend-item"><span class="legend-swatch mean"></span>Scoped service mean</span>
+          <span class="legend-item"><span class="legend-swatch selection"></span>Filtered clinicians</span>
+        </div>
+        <div class="pc-wrap">
+          <canvas id="pcCanvas" aria-label="Parallel coordinates comparison engine"></canvas>
+          <div id="pcLabels"></div>
+        </div>
+        <div class="workspace-foot">
+          <span id="workspaceScope">72 clinicians in scope</span>
+          <span id="workspaceBenchmark">Benchmark: review target + service mean</span>
+          <span id="brushSummary">No filters applied</span>
+        </div>
+      </article>
+
+      <article class="card alert-card">
+        <div class="card-head">
+          <h3>Benchmark Alerts</h3>
+          <div class="card-badge" id="alertCountBadge">0 active</div>
+        </div>
+        <div class="alert-feed" id="alertFeed"></div>
+      </article>
+
+      <article class="card scatter-card">
+        <div class="card-head">
+          <h3>Equity Gap Closure / Value Realization</h3>
+          <div class="card-badge">Reference lines</div>
+        </div>
+        <div class="chart-frame" id="scatterBody"></div>
+      </article>
+
+      <article class="card benchmark-card">
+        <div class="card-head">
+          <h3>Service Benchmark Deviation</h3>
+          <div class="card-badge">Composite gap to target</div>
+        </div>
+        <div class="chart-frame" id="barBody"></div>
+      </article>
+
+      <article class="card verify-card">
+        <div class="card-head">
+          <h3>Selected Exception</h3>
+        </div>
+        <div class="verify-shell" id="verifyPanel"></div>
+      </article>
+
+      <article class="card trend-card">
+        <div class="card-head">
+          <h3>Burnout Risk Trend</h3>
+          <div class="card-badge" id="burnoutBadge">Stable</div>
+        </div>
+        <div class="chart-frame" id="burnoutBody"></div>
+      </article>
+
+      <article class="card gap-card">
+        <div class="card-head">
+          <h3>Access Parity Gaps</h3>
+          <div class="card-badge" id="equityGapBadge">Reference 64</div>
+        </div>
+        <div class="chart-frame" id="equityGapBody"></div>
+      </article>
+
+      <article class="card table-card">
+        <div class="card-head">
+          <h3>Clinician Cohort</h3>
+          <div class="card-badge" id="tableBadge">Showing top 10</div>
+        </div>
+        <div class="table-scroll">
+          <table class="cohort-table">
+            <thead>
+              <tr>
+                <th>Clinician</th>
+                <th>Service</th>
+                <th>Burnout</th>
+                <th>Quality</th>
+                <th>Equity</th>
+                <th>Value</th>
+                <th>Risk</th>
+              </tr>
+            </thead>
+            <tbody id="cohortBody"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <aside class="briefing-toast" id="briefingToast" role="status" aria-live="polite" aria-atomic="true"></aside>
+  <aside class="burnout-toast" id="burnoutToast" role="alert" aria-live="assertive" aria-atomic="true"></aside>
+  <div class="tooltip" id="tooltip"></div>
+
+<script>
+function seeded(seed) {
+  let value = seed;
+  return function next() {
+    value = (value * 16807) % 2147483647;
+    return (value - 1) / 2147483646;
+  };
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function average(list, key) {
+  if (!list.length) return 0;
+  return d3.mean(list, d => d[key]) || 0;
+}
+
+const serviceProfiles = {
+  Oncology: { quality: 76, access: 62, equity: 58, workload: 74, value: 66, mentoring: 70, patientBias: 26 },
+  Surgery: { quality: 72, access: 57, equity: 54, workload: 82, value: 64, mentoring: 63, patientBias: 34 },
+  Neurology: { quality: 78, access: 59, equity: 56, workload: 77, value: 67, mentoring: 68, patientBias: 18 },
+  Radiology: { quality: 70, access: 69, equity: 60, workload: 68, value: 74, mentoring: 58, patientBias: 12 },
+  "Primary Care": { quality: 68, access: 81, equity: 73, workload: 66, value: 71, mentoring: 74, patientBias: 40 },
+  Pediatrics: { quality: 79, access: 74, equity: 80, workload: 61, value: 69, mentoring: 79, patientBias: 22 }
+};
+
+const scenarioConfig = {
+  balanced: {
+    label: "Quarterly benchmark review",
+    seed: 42,
+    narrative: "",
+    inherited: "",
+    changed: "",
+    adjustments: {}
+  },
+  burnout: {
+    label: "Capacity strain watch",
+    seed: 57,
+    narrative: "",
+    inherited: "",
+    changed: "",
+    adjustments: {
+      Oncology: { workload: 8, mentoring: -5, quality: -4, burnout: 7, risk: 8 },
+      Surgery: { workload: 12, mentoring: -7, quality: -5, burnout: 11, risk: 11 },
+      Neurology: { workload: 6, mentoring: -3, quality: -3, burnout: 6, risk: 6 }
+    }
+  },
+  equity: {
+    label: "Access parity review",
+    seed: 83,
+    narrative: "",
+    inherited: "",
+    changed: "",
+    adjustments: {
+      Oncology: { equity: -12, access: -6, burnout: 2, risk: 8 },
+      Surgery: { equity: -16, access: -8, quality: -2, burnout: 3, risk: 10 },
+      Radiology: { equity: -7, access: -4, risk: 5 },
+      Pediatrics: { equity: 5, mentoring: 3 },
+      "Primary Care": { equity: 7, access: 4 }
+    }
+  },
+  safety: {
+    label: "Quality drift watch",
+    seed: 121,
+    narrative: "",
+    inherited: "",
+    changed: "",
+    adjustments: {
+      Surgery: { quality: -10, value: -8, workload: 5, burnout: 4, risk: 12 },
+      Neurology: { quality: -8, value: -6, workload: 4, burnout: 3, risk: 9 },
+      Radiology: { quality: -6, value: -5, access: -3, risk: 7 }
+    }
+  }
+};
+
+const services = Object.keys(serviceProfiles);
+const firstNames = ["Avery", "Sonia", "Miles", "Priya", "Jordan", "Emilia", "Darius", "Nora", "Elias", "Camila", "Noah", "Sana", "Julian", "Leah", "Mateo", "Anika", "Owen", "Mira"];
+const lastNames = ["Chen", "Patel", "Reyes", "Morgan", "Ivanov", "Khan", "Park", "Santos", "Murphy", "Foster", "Young", "Lopez", "Cruz", "Shaw", "Rivera", "Brooks", "Hayes", "Wright"];
+const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const patientCohorts = [
+  { key: "black", label: "Black / African Am." },
+  { key: "hispanic", label: "Hispanic / Latino" },
+  { key: "white", label: "White" },
+  { key: "asian", label: "Asian" },
+  { key: "other", label: "Other" }
+];
+const scenarioTrendOffsets = {
+  balanced: [-4.7, -4.0, -3.3, -2.4, -1.8, -1.0, -0.1, 0.8, 1.7, 2.8, 3.5, 4.2],
+  burnout: [-6.2, -5.3, -4.2, -2.9, -1.1, 0.8, 2.6, 4.5, 6.2, 7.8, 9.2, 10.4],
+  equity: [-4.2, -3.7, -3.0, -2.1, -1.4, -0.5, 0.2, 1.0, 2.1, 3.0, 3.7, 4.5],
+  safety: [-5.0, -4.2, -3.3, -2.5, -1.6, -0.5, 0.5, 1.6, 2.7, 3.8, 4.7, 5.5]
+};
+const scenarioCohortBias = {
+  balanced: { black: 0, hispanic: 0, white: 0, asian: 0, other: 0 },
+  burnout: { black: -1.4, hispanic: -1.0, white: 0.6, asian: 0.8, other: -2.4 },
+  equity: { black: -5.5, hispanic: -4.3, white: 2.3, asian: 1.6, other: -6.4 },
+  safety: { black: -1.3, hispanic: -1.0, white: 0.5, asian: 0.7, other: -2.0 }
+};
+const serviceCohortBias = {
+  Oncology: { black: -4.4, hispanic: -2.7, white: 2.5, asian: 1.2, other: -5.6 },
+  Surgery: { black: -6.2, hispanic: -4.6, white: 2.1, asian: 1.3, other: -7.2 },
+  Neurology: { black: -5.1, hispanic: -3.8, white: 1.7, asian: 0.8, other: -5.9 },
+  Radiology: { black: -3.2, hispanic: -2.4, white: 1.8, asian: 1.4, other: -4.3 },
+  "Primary Care": { black: -1.4, hispanic: -1.2, white: 1.6, asian: 1.1, other: -2.3 },
+  Pediatrics: { black: 0.4, hispanic: 0.1, white: 1.5, asian: 1.3, other: -1.2 }
+};
+
+const dims = [
+  { key: "quality", label: "Care\nQuality", domain: [30, 100], format: v => Math.round(v) },
+  { key: "access", label: "Access\nReliability", domain: [30, 100], format: v => Math.round(v) },
+  { key: "equity", label: "Equity Gap\nClosure", domain: [20, 100], format: v => Math.round(v) },
+  { key: "workload", label: "Workload\nPressure", domain: [25, 100], format: v => Math.round(v) },
+  { key: "value", label: "Value\nRealization", domain: [30, 100], format: v => Math.round(v) },
+  { key: "mentoring", label: "Team\nSupport", domain: [20, 100], format: v => Math.round(v) }
+];
+
+const benchmarkTargets = {
+  quality: 78,
+  access: 70,
+  equity: 64,
+  workload: 58,
+  value: 68,
+  mentoring: 66
+};
+
+const DEFAULT_SCENARIO = "balanced";
+const ALERT_FEED_LIMIT = 6;
+const BURNOUT_WATCH_THRESHOLD = 55;
+const BURNOUT_INTERVENTION_THRESHOLD = 70;
+const BURNOUT_PROVIDER_CRITICAL_THRESHOLD = 78;
+
+function riskTier(risk) {
+  if (risk >= 82) return "critical";
+  if (risk >= 72) return "high";
+  if (risk >= 60) return "medium";
+  return "low";
+}
+
+function burnoutTier(score) {
+  if (score >= 85) return "critical";
+  if (score >= BURNOUT_INTERVENTION_THRESHOLD) return "high";
+  if (score >= BURNOUT_WATCH_THRESHOLD) return "medium";
+  return "low";
+}
+
+function severityWeight(severity) {
+  return { critical: 4, high: 3, medium: 2, low: 1 }[severity] || 0;
+}
+
+function severityClass(severity) {
+  return "sev-" + severity;
+}
+
+function alertPriority(category) {
+  return {
+    burnout: 4,
+    equity: 3,
+    value: 2,
+    risk: 1
+  }[category] || 0;
+}
+
+function buildScenarioProviders(scenarioKey) {
+  const config = scenarioConfig[scenarioKey];
+  const rand = seeded(config.seed);
+  return Array.from({ length: 72 }, (_, index) => {
+    const service = services[index % services.length];
+    const profile = serviceProfiles[service];
+    const adj = config.adjustments[service] || {};
+    const name = `${firstNames[index % firstNames.length]} ${lastNames[(index * 5) % lastNames.length]}`;
+    const quality = clamp(profile.quality + (rand() - 0.5) * 16 + (adj.quality || 0), 30, 100);
+    const access = clamp(profile.access + (rand() - 0.5) * 18 + (adj.access || 0), 30, 100);
+    const equity = clamp(profile.equity + (rand() - 0.5) * 18 + (adj.equity || 0), 20, 100);
+    const workload = clamp(profile.workload + (rand() - 0.5) * 18 + (adj.workload || 0), 25, 100);
+    const value = clamp(profile.value + (rand() - 0.5) * 18 + (adj.value || 0), 30, 100);
+    const mentoring = clamp(profile.mentoring + (rand() - 0.5) * 16 + (adj.mentoring || 0), 20, 100);
+    const patientLoad = Math.round(70 + rand() * 120 + profile.patientBias + ((adj.patientBias || 0)));
+    const loadPressure = clamp((patientLoad - 80) / 1.45, 12, 100);
+    const burnout = clamp(
+      workload * 0.44 +
+      (100 - mentoring) * 0.22 +
+      loadPressure * 0.16 +
+      (100 - value) * 0.08 +
+      (100 - equity) * 0.08 +
+      (adj.burnout || 0) +
+      (rand() - 0.5) * 10,
+      18,
+      98
+    );
+    const composite = quality * 0.24 + access * 0.14 + equity * 0.2 + value * 0.19 + mentoring * 0.09 + (100 - workload) * 0.14;
+    const risk = clamp(
+      burnout * 0.36 +
+      workload * 0.14 +
+      (100 - quality) * 0.19 +
+      (100 - equity) * 0.13 +
+      (100 - value) * 0.1 +
+      (100 - mentoring) * 0.08 +
+      (adj.risk || 0) +
+      (rand() - 0.5) * 10,
+      18,
+      98
+    );
+
+    return {
+      id: `CL-${String(index + 1).padStart(3, "0")}`,
+      name,
+      service,
+      quality,
+      access,
+      equity,
+      workload,
+      burnout,
+      value,
+      mentoring,
+      patientLoad,
+      composite,
+      risk,
+      tier: riskTier(risk)
+    };
+  });
+}
+
+const scenarioData = Object.fromEntries(Object.keys(scenarioConfig).map(key => [key, buildScenarioProviders(key)]));
+
+const state = {
+  scenario: DEFAULT_SCENARIO,
+  service: "all",
+  axisBrushes: {},
+  selectedAlertId: null,
+  hoveredId: null,
+  toastAlertId: null
+};
+
+const scenarioSelect = document.getElementById("scenarioSelect");
+const serviceSelect = document.getElementById("serviceSelect");
+const demoToggleBtn = document.getElementById("demoToggleBtn");
+const briefingToast = document.getElementById("briefingToast");
+const tooltip = document.getElementById("tooltip");
+const burnoutToast = document.getElementById("burnoutToast");
+const alertFeed = document.getElementById("alertFeed");
+let burnoutToastTimer = null;
+let alertFeedSignature = "";
+const alertViewState = {
+  alerts: [],
+  displayAlerts: []
+};
+
+const syncParentFrameHeight = (() => {
+  let rafId = 0;
+  let lastHeight = 0;
+
+  function postHeight() {
+    rafId = 0;
+    const nextHeight = Math.ceil(Math.max(
+      document.documentElement ? document.documentElement.scrollHeight : 0,
+      document.documentElement ? document.documentElement.offsetHeight : 0,
+      document.body ? document.body.scrollHeight : 0,
+      document.body ? document.body.offsetHeight : 0
+    ));
+    if (!nextHeight || Math.abs(nextHeight - lastHeight) < 2) return;
+    lastHeight = nextHeight;
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: "pf-iframe-height", height: nextHeight }, "*");
+    }
+  }
+
+  return function scheduleParentFrameHeight() {
+    if (rafId) return;
+    rafId = window.requestAnimationFrame(postHeight);
+  };
+})();
+
+if ("ResizeObserver" in window) {
+  const frameResizeObserver = new ResizeObserver(() => syncParentFrameHeight());
+  frameResizeObserver.observe(document.documentElement);
+  if (document.body) frameResizeObserver.observe(document.body);
+}
+
+window.addEventListener("load", () => {
+  syncParentFrameHeight();
+  window.setTimeout(syncParentFrameHeight, 250);
+  window.setTimeout(syncParentFrameHeight, 1200);
+  window.setTimeout(syncParentFrameHeight, 4000);
+});
+
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => syncParentFrameHeight());
+}
+
+const briefingMessages = [
+  {
+    label: "Benchmark Logic",
+    body: "Target line shows the clinical review threshold. Mean line shows the selected service cohort before brushing."
+  },
+  {
+    label: "Metric Definitions",
+    body: "Equity Gap Closure measures access parity across patient cohorts. Value Realization balances quality, throughput, and yield."
+  },
+  {
+    label: "Prototype Scope",
+    body: "Simulated data, product-grade interaction surface, no backend claim."
+  }
+];
+
+Object.entries(scenarioConfig).forEach(([key, config]) => {
+  const option = document.createElement("option");
+  option.value = key;
+  option.textContent = config.label;
+  scenarioSelect.appendChild(option);
+});
+
+serviceSelect.innerHTML = `<option value="all">All services</option>${services.map(service => `<option value="${service}">${service}</option>`).join("")}`;
+
+function getScenarioProviders() {
+  return scenarioData[state.scenario];
+}
+
+function getScopedProviders() {
+  return getScenarioProviders()
+    .filter(provider => state.service === "all" || provider.service === state.service);
+}
+
+function getVisibleProviders() {
+  return getScopedProviders()
+    .filter(provider => dims.every(dim => {
+      const brushes = state.axisBrushes[dim.key];
+      return !brushes || !brushes.length || brushes.some(brush => provider[dim.key] >= brush.min && provider[dim.key] <= brush.max);
+    }));
+}
+
+function buildBenchmarkProfiles(providers) {
+  if (!providers.length) return null;
+  const mean = Object.fromEntries(
+    dims.map(dim => [dim.key, +(average(providers, dim.key) || 0).toFixed(1)])
+  );
+  return {
+    mean,
+    target: benchmarkTargets
+  };
+}
+
+function serviceSummary(providers) {
+  return services.map(service => {
+    const list = providers.filter(provider => provider.service === service);
+    const quality = average(list, "quality");
+    const access = average(list, "access");
+    const equity = average(list, "equity");
+    const burnout = average(list, "burnout");
+    const value = average(list, "value");
+    const workload = average(list, "workload");
+    const mentoring = average(list, "mentoring");
+    const composite = average(list, "composite");
+    return {
+      service,
+      count: list.length,
+      quality,
+      access,
+      equity,
+      burnout,
+      value,
+      workload,
+      mentoring,
+      composite,
+      deviation: composite - 66,
+      highBurnoutCount: list.filter(provider => provider.burnout >= BURNOUT_INTERVENTION_THRESHOLD).length,
+      elevatedBurnoutCount: list.filter(provider => provider.burnout >= 60).length,
+      equityGapCount: list.filter(provider => provider.equity < 64).length,
+      list
+    };
+  }).filter(item => item.count > 0);
+}
+
+function buildAlerts(providers) {
+  const alerts = [];
+  const summaries = serviceSummary(providers);
+  const summaryMap = Object.fromEntries(summaries.map(summary => [summary.service, summary]));
+
+  summaries.forEach(summary => {
+    const burnoutTrend = buildBurnoutTrend(summary.list);
+    const burnoutDelta = burnoutTrend.length ? burnoutTrend[burnoutTrend.length - 1].avgRisk - burnoutTrend[0].avgRisk : 0;
+    const maxGap = buildEquityGapMatrix(summary.list)[0]?.maxGap || 0;
+
+    if (summary.burnout >= BURNOUT_WATCH_THRESHOLD && burnoutDelta >= 4) {
+      alerts.push({
+        id: `service-burnout-${summary.service}`,
+        category: "burnout",
+        entityType: "service",
+        entityId: summary.service,
+        severity: summary.burnout >= 64 ? "critical" : "high",
+        title: `${summary.service} exceeded the burnout benchmark`,
+        subtitle: `Service cohort benchmark · ${summary.service}`,
+        reason: "Current burnout mean and monthly trend both sit above review tolerance for the service cohort.",
+        observed: `${summary.burnout.toFixed(1)} burnout risk`,
+        reference: `Burnout risk below ${BURNOUT_WATCH_THRESHOLD} with stable monthly trend`,
+        evidence: [
+          ["burnout_risk", summary.burnout.toFixed(1)],
+          ["gap_to_watch", `+${(summary.burnout - BURNOUT_WATCH_THRESHOLD).toFixed(1)} pts`],
+          ["workload_pressure", summary.workload.toFixed(1)],
+          ["elevated_clinicians", String(summary.elevatedBurnoutCount)],
+          ["trend_delta_12m", `${burnoutDelta.toFixed(1)} pts`]
+        ],
+        priority: 96
+      });
+    }
+    if (summary.equity <= 57 || maxGap >= 9) {
+      alerts.push({
+        id: `service-equity-${summary.service}`,
+        category: "equity",
+        entityType: "service",
+        entityId: summary.service,
+        severity: summary.equity <= 50 ? "critical" : "high",
+        title: `${summary.service} missed the access parity benchmark`,
+        subtitle: `Service benchmark drift · ${summary.service}`,
+        reason: "The weighted parity index remains below the clinical review threshold for the current service cohort.",
+        observed: `${summary.equity.toFixed(1)} equity gap closure`,
+        reference: `Equity gap closure ${benchmarkTargets.equity}+`,
+        evidence: [
+          ["equity_gap_closure", summary.equity.toFixed(1)],
+          ["gap_to_target", `${(summary.equity - benchmarkTargets.equity).toFixed(1)} pts`],
+          ["largest_gap", `${maxGap.toFixed(1)} pts`],
+          ["access_reliability", summary.access.toFixed(1)],
+          ["value_realization", summary.value.toFixed(1)],
+          ["service_average", summary.composite.toFixed(1)]
+        ],
+        priority: 88
+      });
+    }
+    if (summary.value <= 60 && summary.quality <= 66) {
+      alerts.push({
+        id: `service-value-${summary.service}`,
+        category: "value",
+        entityType: "service",
+        entityId: summary.service,
+        severity: "medium",
+        title: `${summary.service} value realization is below target`,
+        subtitle: `Service comparison · ${summary.service}`,
+        reason: "Quality and value realization both trail the current service benchmark range.",
+        observed: `${summary.value.toFixed(1)} value realization`,
+        reference: `Value realization ${benchmarkTargets.value}+`,
+        evidence: [
+          ["value_realization", summary.value.toFixed(1)],
+          ["gap_to_target", `${(summary.value - benchmarkTargets.value).toFixed(1)} pts`],
+          ["care_quality", summary.quality.toFixed(1)],
+          ["workload_pressure", summary.workload.toFixed(1)],
+          ["composite_deviation", `${summary.deviation.toFixed(1)} pts`]
+        ],
+        priority: 70
+      });
+    }
+  });
+
+  providers
+    .filter(provider => provider.burnout >= BURNOUT_INTERVENTION_THRESHOLD)
+    .sort((a, b) => b.burnout - a.burnout)
+    .slice(0, 3)
+    .forEach(provider => {
+      const serviceMean = summaryMap[provider.service]?.burnout || 0;
+      alerts.push({
+        id: `provider-burnout-${provider.id}`,
+        category: "burnout",
+        entityType: "provider",
+        entityId: provider.id,
+        severity: provider.burnout >= BURNOUT_PROVIDER_CRITICAL_THRESHOLD ? "critical" : "high",
+        title: `${provider.name} (${provider.id}) crossed the intervention threshold`,
+        subtitle: `Clinician review · ${provider.service} · ${provider.id}`,
+        reason: "This clinician remains materially above the service burnout mean and the intervention line.",
+        observed: `${provider.burnout.toFixed(1)} burnout risk`,
+        reference: `Burnout intervention threshold ${BURNOUT_INTERVENTION_THRESHOLD}`,
+        evidence: [
+          ["burnout_risk", provider.burnout.toFixed(1)],
+          ["vs_service_mean", `${(provider.burnout - serviceMean).toFixed(1)} pts`],
+          ["patient_load", String(provider.patientLoad)],
+          ["workload_pressure", provider.workload.toFixed(1)],
+          ["team_support", provider.mentoring.toFixed(1)]
+        ],
+        priority: 94
+      });
+    });
+
+  providers
+    .filter(provider => provider.risk >= 82)
+    .sort((a, b) => b.risk - a.risk)
+    .slice(0, 2)
+    .forEach(provider => {
+      const serviceMean = summaryMap[provider.service]?.composite || 0;
+      alerts.push({
+        id: `provider-risk-${provider.id}`,
+        category: "risk",
+        entityType: "provider",
+        entityId: provider.id,
+        severity: riskTier(provider.risk),
+        title: `${provider.name} (${provider.id}) remains outside review range`,
+        subtitle: `Clinician review · ${provider.service} · ${provider.id}`,
+        reason: "Multiple dimensions remain outside the current benchmark envelope for this service.",
+        observed: `${provider.risk.toFixed(1)} composite risk`,
+        reference: "Composite risk below 78",
+        evidence: [
+          ["composite_risk", provider.risk.toFixed(1)],
+          ["vs_service_composite", `${(provider.composite - serviceMean).toFixed(1)} pts`],
+          ["care_quality", provider.quality.toFixed(1)],
+          ["equity_gap_closure", provider.equity.toFixed(1)],
+          ["burnout_risk", provider.burnout.toFixed(1)],
+          ["value_realization", provider.value.toFixed(1)]
+        ],
+        priority: 58
+      });
+    });
+
+  return alerts
+    .sort((a, b) =>
+      (b.priority || 0) - (a.priority || 0) ||
+      alertPriority(b.category) - alertPriority(a.category) ||
+      severityWeight(b.severity) - severityWeight(a.severity) ||
+      b.observed.localeCompare(a.observed)
+    );
+}
+
+function refreshAlertViewState() {
+  alertViewState.alerts = buildAlerts(getVisibleProviders());
+  alertViewState.displayAlerts = alertViewState.alerts.slice(0, ALERT_FEED_LIMIT);
+}
+
+function getAlerts() {
+  return alertViewState.alerts;
+}
+
+function getDisplayAlerts() {
+  return alertViewState.displayAlerts;
+}
+
+function ensureSelectedAlert() {
+  const displayAlerts = getDisplayAlerts();
+  if (!displayAlerts.length) {
+    state.selectedAlertId = null;
+    return;
+  }
+  if (!displayAlerts.some(alert => alert.id === state.selectedAlertId)) {
+    state.selectedAlertId = displayAlerts[0].id;
+  }
+}
+
+function getSelectedAlert() {
+  const alerts = getDisplayAlerts();
+  return alerts.find(alert => alert.id === state.selectedAlertId) || null;
+}
+
+function getProviderById(providerId, providers = getVisibleProviders()) {
+  return providers.find(provider => provider.id === providerId) || null;
+}
+
+function isHighlighted(provider) {
+  const alert = getSelectedAlert();
+  if (!alert) return false;
+  if (alert.entityType === "provider") return provider.id === alert.entityId;
+  return provider.service === alert.entityId;
+}
+
+function tierColor(tier) {
+  return {
+    critical: "rgba(183, 75, 73, 0.78)",
+    high: "rgba(166, 102, 20, 0.78)",
+    medium: "rgba(86, 122, 147, 0.78)",
+    low: "rgba(47, 125, 87, 0.78)"
+  }[tier];
+}
+
+function severityColor(severity) {
+  return {
+    critical: "rgba(183, 75, 73, 0.88)",
+    high: "rgba(154, 122, 69, 0.88)",
+    medium: "rgba(106, 133, 150, 0.88)",
+    low: "rgba(47, 125, 87, 0.88)"
+  }[severity] || "rgba(242, 240, 236, 0.88)";
+}
+
+function getFocusService(alert = getSelectedAlert()) {
+  if (!alert) return state.service === "all" ? null : state.service;
+  if (alert.entityType === "service") return alert.entityId;
+  if (alert.entityType === "provider") return getProviderById(alert.entityId)?.service || null;
+  return null;
+}
+
+function getFocusedProviders() {
+  const visible = getVisibleProviders();
+  const focusService = getFocusService();
+  return focusService ? visible.filter(provider => provider.service === focusService) : visible;
+}
+
+function isMeaningfulBrush(axisKey, brush) {
+  const dim = dimByKey(axisKey);
+  if (!dim) return true;
+  const domainSpan = dim.domain[1] - dim.domain[0];
+  if (!domainSpan) return true;
+  return brush.max - brush.min < domainSpan * 0.98;
+}
+
+function buildBurnoutTrend(providers) {
+  if (!providers.length) return [];
+  const offsets = scenarioTrendOffsets[state.scenario];
+  const spread = d3.deviation(providers, provider => provider.burnout) || 8;
+  const serviceBias = average(providers, "workload") >= 76 ? 1.3 : -0.4;
+
+  return months.map((month, index) => {
+    const monthlyValues = providers.map(provider => {
+      const periodic = Math.sin((index / 12) * Math.PI * 2 + provider.patientLoad / 43) * spread * 0.07;
+      return clamp(provider.burnout + offsets[index] + periodic + serviceBias, 18, 98);
+    });
+    const avgRisk = d3.mean(monthlyValues) || 0;
+    const highRiskCount = monthlyValues.filter(value => value >= 70).length;
+    const interventions = Math.max(0, Math.round(highRiskCount * 0.32 + (avgRisk >= 70 ? 2 : avgRisk >= 62 ? 1 : 0)));
+    return {
+      month,
+      avgRisk: +avgRisk.toFixed(1),
+      highRiskCount,
+      interventions
+    };
+  });
+}
+
+function buildEquityGapMatrix(providers) {
+  return serviceSummary(providers)
+    .map(summary => {
+      const row = { service: summary.service, count: summary.count };
+      let maxGap = 0;
+
+      patientCohorts.forEach(cohort => {
+        const cohortBias = serviceCohortBias[summary.service]?.[cohort.key] || 0;
+        const scenarioBias = scenarioCohortBias[state.scenario]?.[cohort.key] || 0;
+        const accessBias = (summary.access - 64) * 0.08;
+        const score = clamp(summary.equity + cohortBias + scenarioBias + accessBias, 20, 100);
+        const gap = Math.max(0, 64 - score);
+        maxGap = Math.max(maxGap, gap);
+        row[cohort.key] = {
+          score: +score.toFixed(1),
+          gap: +gap.toFixed(1)
+        };
+      });
+
+      row.maxGap = +maxGap.toFixed(1);
+      return row;
+    })
+    .sort((a, b) => b.maxGap - a.maxGap || a.service.localeCompare(b.service));
+}
+
+function getUrgentBurnoutAlert() {
+  const alerts = getAlerts();
+  return alerts.find(alert => alert.category === "burnout" && alert.severity === "critical") || null;
+}
+
+function hideBurnoutToast() {
+  burnoutToast.classList.remove("visible");
+}
+
+function dismissBurnoutToast(resetAlertId = false) {
+  if (burnoutToastTimer) {
+    clearTimeout(burnoutToastTimer);
+    burnoutToastTimer = null;
+  }
+  hideBurnoutToast();
+  if (resetAlertId) state.toastAlertId = null;
+}
+
+function hideBriefingToast() {
+  briefingToast.classList.remove("visible");
+}
+
+function runBriefingToast(index) {
+  if (index >= briefingMessages.length) {
+    briefingToast.innerHTML = "";
+    return;
+  }
+
+  const message = briefingMessages[index];
+  const isLast = index === briefingMessages.length - 1;
+  briefingToast.innerHTML = `
+    <div class="briefing-toast-head">
+      <span class="briefing-toast-label">${message.label}</span>
+      <span class="briefing-toast-step">${index + 1} / ${briefingMessages.length}</span>
+    </div>
+    <div class="briefing-toast-body">${message.body}</div>
+    <div class="briefing-toast-actions">
+      <button class="briefing-toast-btn" type="button" data-action="dismiss">Dismiss</button>
+      <button class="briefing-toast-btn primary" type="button" data-action="next">${isLast ? "Done" : "Next"}</button>
+    </div>
+  `;
+
+  briefingToast.classList.add("visible");
+
+  const dismiss = () => {
+    hideBriefingToast();
+    window.setTimeout(() => {
+      briefingToast.innerHTML = "";
+    }, 220);
+  };
+
+  const next = () => {
+    hideBriefingToast();
+    window.setTimeout(() => {
+      if (isLast) {
+        briefingToast.innerHTML = "";
+        return;
+      }
+      runBriefingToast(index + 1);
+    }, 180);
+  };
+
+  briefingToast.querySelector('[data-action="dismiss"]')?.addEventListener("click", dismiss, { once: true });
+  briefingToast.querySelector('[data-action="next"]')?.addEventListener("click", next, { once: true });
+}
+
+function startBriefingSequence() {
+  hideBriefingToast();
+  briefingToast.innerHTML = "";
+  runBriefingToast(0);
+}
+
+function showTooltip(event, html) {
+  tooltip.innerHTML = html;
+  tooltip.classList.add("visible");
+  let x = event.clientX + 14;
+  let y = event.clientY - 12;
+  if (x + 240 > window.innerWidth) x = event.clientX - 210;
+  if (y < 12) y = 12;
+  tooltip.style.left = `${x}px`;
+  tooltip.style.top = `${y}px`;
+}
+
+function hideTooltip() {
+  tooltip.classList.remove("visible");
+}
+
+function humanizeKey(value) {
+  return value.replace(/_/g, " ");
+}
+
+const pcCanvas = document.getElementById("pcCanvas");
+const pcLabels = document.getElementById("pcLabels");
+let pcCtx;
+let pcWidth = 0;
+let pcHeight = 412;
+let pcX;
+let pcY = {};
+const pcMargin = { top: 22, right: 42, bottom: 74, left: 22 };
+let brushInteraction = null;
+let brushSequence = 0;
+let demoRunning = false;
+let demoTimer = null;
+let demoSceneIndex = 0;
+const DEMO_TICK_MS = 90;
+const DEMO_SPEED_MULTIPLIER = 2;
+const DEMO_EMPTY_LINGER_MULTIPLIER = 3;
+
+const demoScenes = [
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {},
+    hold: 1200,
+    travel: 2000
+  },
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {
+      workload: [{ id: "demo-workload-core", min: 56, max: 76 }]
+    },
+    hold: 1200,
+    travel: 2000
+  },
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {
+      workload: [{ id: "demo-workload-core", min: 66, max: 84 }]
+    },
+    hold: 1200,
+    travel: 2000
+  },
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {
+      workload: [{ id: "demo-workload-core", min: 70, max: 80 }]
+    },
+    hold: 1400,
+    travel: 2200
+  },
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {
+      workload: [
+        { id: "demo-workload-core", min: 70, max: 80 },
+        { id: "demo-workload-lower", min: 46, max: 60 }
+      ]
+    },
+    hold: 1400,
+    travel: 2000
+  },
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {
+      workload: [
+        { id: "demo-workload-core", min: 70, max: 80 },
+        { id: "demo-workload-lower", min: 46, max: 60 }
+      ],
+      quality: [{ id: "demo-quality-side", min: 60, max: 82 }]
+    },
+    hold: 1400,
+    travel: 2000
+  },
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {
+      workload: [
+        { id: "demo-workload-core", min: 70, max: 80 },
+        { id: "demo-workload-lower", min: 46, max: 60 }
+      ],
+      quality: [{ id: "demo-quality-side", min: 60, max: 82 }],
+      mentoring: [{ id: "demo-mentoring-side", min: 56, max: 84 }]
+    },
+    hold: 1400,
+    travel: 2200
+  },
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {
+      workload: [
+        { id: "demo-workload-core", min: 70, max: 80 },
+        { id: "demo-workload-lower", min: 46, max: 60 }
+      ],
+      quality: [{ id: "demo-quality-side", min: 66, max: 86 }],
+      mentoring: [{ id: "demo-mentoring-side", min: 56, max: 84 }]
+    },
+    hold: 1400,
+    travel: 2200
+  },
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {
+      workload: [
+        { id: "demo-workload-core", min: 70, max: 80 },
+        { id: "demo-workload-lower", min: 46, max: 60 }
+      ],
+      quality: [{ id: "demo-quality-side", min: 66, max: 86 }],
+      mentoring: [{ id: "demo-mentoring-side", min: 62, max: 88 }]
+    },
+    hold: 1300,
+    travel: 2000
+  },
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {
+      workload: [
+        { id: "demo-workload-core", min: 70, max: 80 },
+        { id: "demo-workload-lower", min: 46, max: 60 }
+      ],
+      quality: [{ id: "demo-quality-side", min: 66, max: 86 }]
+    },
+    hold: 1200,
+    travel: 1800
+  },
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {
+      workload: [
+        { id: "demo-workload-core", min: 70, max: 80 },
+        { id: "demo-workload-lower", min: 46, max: 60 }
+      ]
+    },
+    hold: 1200,
+    travel: 1800
+  },
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {
+      workload: [
+        { id: "demo-workload-core", min: 64, max: 78 },
+        { id: "demo-workload-lower", min: 46, max: 60 }
+      ]
+    },
+    hold: 1200,
+    travel: 1800
+  },
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {
+      workload: [{ id: "demo-workload-core", min: 64, max: 78 }]
+    },
+    hold: 1200,
+    travel: 1800
+  },
+  {
+    scenario: DEFAULT_SCENARIO,
+    service: "all",
+    axisBrushes: {},
+    hold: 2200,
+    travel: 0
+  }
+];
+
+function nextBrushId() {
+  brushSequence += 1;
+  return `brush-${brushSequence}`;
+}
+
+function cloneAxisBrushes(axisBrushes) {
+  return Object.fromEntries(
+    Object.entries(axisBrushes).map(([axisKey, brushes]) => [
+      axisKey,
+      brushes.map(brush => ({ ...brush }))
+    ])
+  );
+}
+
+function syncControls() {
+  scenarioSelect.value = state.scenario;
+  serviceSelect.value = state.service;
+}
+
+function setDemoButtonState() {
+  demoToggleBtn.textContent = demoRunning ? "Stop Demo" : "Run Demo";
+  demoToggleBtn.classList.toggle("active", demoRunning);
+  demoToggleBtn.setAttribute("aria-pressed", demoRunning ? "true" : "false");
+}
+
+function applyDemoState(scene, axisBrushes = scene.axisBrushes, options = {}) {
+  state.scenario = scene.scenario;
+  state.service = scene.service;
+  state.axisBrushes = cloneAxisBrushes(axisBrushes);
+  state.hoveredId = null;
+  hideTooltip();
+  syncControls();
+  renderAll(options);
+}
+
+function seedBrush(axisKey, brush) {
+  const dim = dimByKey(axisKey);
+  const domainSpan = dim.domain[1] - dim.domain[0];
+  const center = (brush.min + brush.max) / 2;
+  const halfSpan = Math.max((brush.max - brush.min) * 0.12, domainSpan * 0.035);
+  return normalizeBrush(axisKey, {
+    id: brush.id,
+    min: center - halfSpan,
+    max: center + halfSpan
+  });
+}
+
+function interpolateAxisBrushes(fromAxisBrushes, toAxisBrushes, progress) {
+  const result = {};
+  const axisKeys = new Set([...Object.keys(fromAxisBrushes), ...Object.keys(toAxisBrushes)]);
+
+  axisKeys.forEach(axisKey => {
+    const fromBrushes = fromAxisBrushes[axisKey] || [];
+    const toBrushes = toAxisBrushes[axisKey] || [];
+    const brushIds = Array.from(new Set([
+      ...fromBrushes.map(brush => brush.id),
+      ...toBrushes.map(brush => brush.id)
+    ]));
+
+    const brushes = brushIds
+      .map(brushId => {
+        const fromBrush = fromBrushes.find(brush => brush.id === brushId) || null;
+        const toBrush = toBrushes.find(brush => brush.id === brushId) || null;
+        if (!fromBrush && progress <= 0) return null;
+        if (!toBrush && progress >= 1) return null;
+
+        const start = fromBrush || seedBrush(axisKey, toBrush);
+        const end = toBrush || seedBrush(axisKey, fromBrush);
+
+        return normalizeBrush(axisKey, {
+          id: brushId,
+          min: start.min + (end.min - start.min) * progress,
+          max: start.max + (end.max - start.max) * progress
+        });
+      })
+      .filter(Boolean);
+
+    if (brushes.length) result[axisKey] = brushes;
+  });
+
+  return result;
+}
+
+function runDemoTransition(sceneIndex, step = 1) {
+  if (!demoRunning) return;
+  const scene = demoScenes[sceneIndex];
+  const nextIndex = (sceneIndex + 1) % demoScenes.length;
+  const nextScene = demoScenes[nextIndex];
+  const steps = Math.max(1, Math.round(((scene.travel || 0) * DEMO_SPEED_MULTIPLIER) / DEMO_TICK_MS));
+  const progress = d3.easeCubicInOut(Math.min(step / steps, 1));
+  const axisBrushes = interpolateAxisBrushes(scene.axisBrushes, nextScene.axisBrushes, progress);
+  applyDemoState(nextScene, axisBrushes, { refreshAlerts: false });
+
+  if (step >= steps) {
+    runDemoHold(nextIndex);
+    return;
+  }
+
+  demoTimer = setTimeout(() => runDemoTransition(sceneIndex, step + 1), DEMO_TICK_MS);
+}
+
+function runDemoHold(sceneIndex) {
+  if (!demoRunning) return;
+  demoSceneIndex = sceneIndex;
+  const scene = demoScenes[sceneIndex];
+  applyDemoState(scene);
+  const holdMs = scene.hold * DEMO_SPEED_MULTIPLIER * (!scene.travel ? DEMO_EMPTY_LINGER_MULTIPLIER : 1);
+
+  if (!scene.travel) {
+    demoTimer = setTimeout(() => runDemoHold(0), holdMs);
+    return;
+  }
+
+  demoTimer = setTimeout(() => runDemoTransition(sceneIndex, 1), holdMs);
+}
+
+function stopDemo(syncView = true) {
+  const wasRunning = demoRunning;
+  if (demoTimer) {
+    clearTimeout(demoTimer);
+    demoTimer = null;
+  }
+  demoRunning = false;
+  setDemoButtonState();
+  if (syncView && wasRunning) renderAll();
+}
+
+function startDemo() {
+  stopDemo(false);
+  demoRunning = true;
+  demoSceneIndex = 0;
+  setDemoButtonState();
+  runDemoHold(0);
+}
+
+function getAxisBrushes(axisKey) {
+  return state.axisBrushes[axisKey] || [];
+}
+
+function dimByKey(axisKey) {
+  return dims.find(dim => dim.key === axisKey);
+}
+
+function normalizeBrush(axisKey, brush) {
+  const dim = dimByKey(axisKey);
+  const min = clamp(Math.min(brush.min, brush.max), dim.domain[0], dim.domain[1]);
+  const max = clamp(Math.max(brush.min, brush.max), dim.domain[0], dim.domain[1]);
+  return { id: brush.id, min, max };
+}
+
+function mergeAxisBrushes(axisKey, brushes, activeId = null) {
+  const normalized = brushes
+    .map(brush => normalizeBrush(axisKey, brush))
+    .filter(brush => Number.isFinite(brush.min) && Number.isFinite(brush.max))
+    .sort((a, b) => a.min - b.min);
+
+  const merged = [];
+  for (const brush of normalized) {
+    const last = merged[merged.length - 1];
+    if (!last || brush.min > last.max) {
+      merged.push({ ...brush });
+      continue;
+    }
+    last.max = Math.max(last.max, brush.max);
+    if (brush.id === activeId || last.id === activeId) last.id = activeId;
+  }
+
+  return { brushes: merged, activeId: merged.some(brush => brush.id === activeId) ? activeId : null };
+}
+
+function writeAxisBrushes(axisKey, brushes, activeId = null) {
+  const merged = mergeAxisBrushes(axisKey, brushes, activeId);
+  if (merged.brushes.length) state.axisBrushes[axisKey] = merged.brushes;
+  else delete state.axisBrushes[axisKey];
+  return merged.activeId;
+}
+
+function updateAxisBrush(axisKey, brushId, updater) {
+  const brushes = getAxisBrushes(axisKey).map(brush => brush.id === brushId ? normalizeBrush(axisKey, updater(brush)) : brush);
+  return writeAxisBrushes(axisKey, brushes, brushId);
+}
+
+function removeAxisBrush(axisKey, brushId) {
+  writeAxisBrushes(axisKey, getAxisBrushes(axisKey).filter(brush => brush.id !== brushId));
+}
+
+function expandTinyBrush(axisKey, brushId) {
+  const dim = dimByKey(axisKey);
+  const minSpan = (dim.domain[1] - dim.domain[0]) * 0.06;
+  const brush = getAxisBrushes(axisKey).find(item => item.id === brushId);
+  if (!brush) return;
+  if (brush.max - brush.min >= minSpan) return;
+  const mid = (brush.min + brush.max) / 2;
+  let min = mid - minSpan / 2;
+  let max = mid + minSpan / 2;
+  if (min < dim.domain[0]) {
+    max += dim.domain[0] - min;
+    min = dim.domain[0];
+  }
+  if (max > dim.domain[1]) {
+    min -= max - dim.domain[1];
+    max = dim.domain[1];
+  }
+  updateAxisBrush(axisKey, brushId, current => ({ ...current, min, max }));
+}
+
+function brushRect(axisKey, brush) {
+  const x = pcX(axisKey);
+  const width = 38;
+  const rawTop = pcY[axisKey](brush.max);
+  const rawBottom = pcY[axisKey](brush.min);
+  const minHeight = 28;
+  const center = (rawTop + rawBottom) / 2;
+  const height = Math.max(rawBottom - rawTop, minHeight);
+  const top = center - height / 2;
+  const iconSize = 10;
+  const handleHeight = 8;
+  return {
+    x: x - width / 2,
+    y: top,
+    width,
+    height,
+    icon: {
+      x: x + width / 2 - iconSize - 4,
+      y: top + 4,
+      width: iconSize,
+      height: iconSize
+    },
+    topHandle: {
+      x: x - width / 2 + 4,
+      y: top + 4,
+      width: width - iconSize - 14,
+      height: handleHeight
+    },
+    bottomHandle: {
+      x: x - width / 2 + 4,
+      y: top + height - handleHeight - 4,
+      width: width - 8,
+      height: handleHeight
+    }
+  };
+}
+
+function insideRect(mouseX, mouseY, rect) {
+  return mouseX >= rect.x && mouseX <= rect.x + rect.width && mouseY >= rect.y && mouseY <= rect.y + rect.height;
+}
+
+function hitBrush(mouseX, mouseY) {
+  for (const dim of dims) {
+    const brushes = getAxisBrushes(dim.key);
+    for (let index = brushes.length - 1; index >= 0; index -= 1) {
+      const brush = brushes[index];
+      const rect = brushRect(dim.key, brush);
+      if (!insideRect(mouseX, mouseY, rect)) continue;
+      if (insideRect(mouseX, mouseY, rect.icon)) return { axisKey: dim.key, brush, part: "remove" };
+      if (insideRect(mouseX, mouseY, rect.topHandle)) return { axisKey: dim.key, brush, part: "resize-max" };
+      if (insideRect(mouseX, mouseY, rect.bottomHandle)) return { axisKey: dim.key, brush, part: "resize-min" };
+      return { axisKey: dim.key, brush, part: "move" };
+    }
+  }
+  return null;
+}
+
+function distanceToSegment(px, py, ax, ay, bx, by) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (!lenSq) return Math.hypot(px - ax, py - ay);
+  const t = clamp(((px - ax) * dx + (py - ay) * dy) / lenSq, 0, 1);
+  const x = ax + dx * t;
+  const y = ay + dy * t;
+  return Math.hypot(px - x, py - y);
+}
+
+function providerPoints(provider) {
+  return dims.map(dim => ({ x: pcX(dim.key), y: pcY[dim.key](provider[dim.key]) }));
+}
+
+function profilePoints(profile) {
+  return dims.map(dim => ({ x: pcX(dim.key), y: pcY[dim.key](profile[dim.key]) }));
+}
+
+function drawProfileLine(points, strokeStyle, lineWidth, dash = []) {
+  if (!points.length) return;
+  pcCtx.save();
+  pcCtx.beginPath();
+  points.forEach((point, index) => {
+    if (index === 0) pcCtx.moveTo(point.x, point.y);
+    else pcCtx.lineTo(point.x, point.y);
+  });
+  pcCtx.strokeStyle = strokeStyle;
+  pcCtx.lineWidth = lineWidth;
+  pcCtx.setLineDash(dash);
+  pcCtx.stroke();
+  pcCtx.setLineDash([]);
+  pcCtx.fillStyle = strokeStyle;
+  points.forEach(point => {
+    pcCtx.beginPath();
+    pcCtx.arc(point.x, point.y, 2.6, 0, Math.PI * 2);
+    pcCtx.fill();
+  });
+  pcCtx.restore();
+}
+
+function findNearestProvider(mouseX, mouseY) {
+  let nearest = null;
+  let nearestDistance = Infinity;
+  for (const provider of getVisibleProviders()) {
+    const points = providerPoints(provider);
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const current = points[index];
+      const next = points[index + 1];
+      const distance = distanceToSegment(mouseX, mouseY, current.x, current.y, next.x, next.y);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = provider;
+      }
+    }
+  }
+  return nearestDistance <= 7 ? nearest : null;
+}
+
+function syncHoveredProvider(nextId) {
+  if (state.hoveredId === nextId) return;
+  state.hoveredId = nextId;
+  renderParallel();
+  renderTable();
+}
+
+function initParallel() {
+  const rect = pcCanvas.getBoundingClientRect();
+  pcWidth = rect.width || 900;
+  const ratio = window.devicePixelRatio || 1;
+  pcCanvas.width = pcWidth * ratio;
+  pcCanvas.height = pcHeight * ratio;
+  pcCanvas.style.width = `${pcWidth}px`;
+  pcCanvas.style.height = `${pcHeight}px`;
+  pcCtx = pcCanvas.getContext("2d");
+  pcCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  pcX = d3.scalePoint().domain(dims.map(dim => dim.key)).range([pcMargin.left, pcWidth - pcMargin.right]).padding(0.55);
+  pcY = {};
+  dims.forEach(dim => {
+    pcY[dim.key] = d3.scaleLinear().domain(dim.domain).range([pcHeight - pcMargin.bottom, pcMargin.top]);
+  });
+  renderAxisLabels();
+  renderParallel();
+}
+
+function renderAxisLabels() {
+  pcLabels.innerHTML = "";
+  dims.forEach(dim => {
+    const label = document.createElement("div");
+    label.className = "axis-label";
+    label.style.left = `${pcX(dim.key)}px`;
+    label.innerHTML = dim.label.replace("\n", "<br>");
+    pcLabels.appendChild(label);
+
+    pcY[dim.key].ticks(4).forEach(tick => {
+      const tickLabel = document.createElement("div");
+      tickLabel.className = "axis-tick";
+      tickLabel.style.left = `${pcX(dim.key) + 14}px`;
+      tickLabel.style.top = `${pcY[dim.key](tick)}px`;
+      tickLabel.style.transform = "translateY(-50%)";
+      tickLabel.textContent = dim.format(tick);
+      pcLabels.appendChild(tickLabel);
+    });
+  });
+}
+
+function renderParallel() {
+  if (!pcCtx) return;
+  const visible = getVisibleProviders();
+  const scoped = getScopedProviders();
+  const benchmark = buildBenchmarkProfiles(scoped);
+  pcCtx.clearRect(0, 0, pcWidth, pcHeight);
+
+  dims.forEach(dim => {
+    const x = pcX(dim.key);
+    pcCtx.beginPath();
+    pcCtx.strokeStyle = "rgba(166, 175, 186, 0.26)";
+    pcCtx.lineWidth = 1;
+    pcCtx.moveTo(x, pcMargin.top);
+    pcCtx.lineTo(x, pcHeight - pcMargin.bottom);
+    pcCtx.stroke();
+  });
+
+  if (benchmark) {
+    drawProfileLine(profilePoints(benchmark.target), "rgba(103, 178, 133, 0.9)", 1.5, [7, 5]);
+    drawProfileLine(profilePoints(benchmark.mean), "rgba(134, 170, 198, 0.82)", 1.6);
+  }
+
+  visible.forEach(provider => {
+    pcCtx.beginPath();
+    const points = providerPoints(provider);
+    points.forEach((point, index) => {
+      const { x, y } = point;
+      if (index === 0) pcCtx.moveTo(x, y);
+      else pcCtx.lineTo(x, y);
+    });
+    const hovered = provider.id === state.hoveredId;
+    const highlighted = isHighlighted(provider);
+    pcCtx.strokeStyle = hovered ? "rgba(142, 170, 188, 0.92)" : highlighted ? tierColor(provider.tier) : "rgba(242, 240, 236, 0.14)";
+    pcCtx.lineWidth = hovered ? 2.2 : highlighted ? 1.6 : 0.9;
+    pcCtx.stroke();
+  });
+
+  dims.forEach(dim => {
+    getAxisBrushes(dim.key).forEach(brush => {
+      const rect = brushRect(dim.key, brush);
+      pcCtx.fillStyle = "rgba(242, 240, 236, 0.06)";
+      pcCtx.strokeStyle = "rgba(242, 240, 236, 0.58)";
+      pcCtx.lineWidth = 1.2;
+      pcCtx.beginPath();
+      pcCtx.roundRect(rect.x, rect.y, rect.width, rect.height, 10);
+      pcCtx.fill();
+      pcCtx.stroke();
+
+      pcCtx.fillStyle = "rgba(20, 25, 30, 0.98)";
+      pcCtx.beginPath();
+      pcCtx.roundRect(rect.icon.x - 1, rect.icon.y - 1, rect.icon.width + 2, rect.icon.height + 2, 6);
+      pcCtx.fill();
+      pcCtx.strokeStyle = "rgba(242, 240, 236, 0.14)";
+      pcCtx.stroke();
+
+      pcCtx.strokeStyle = "rgba(242, 240, 236, 0.88)";
+      pcCtx.lineWidth = 1.3;
+      pcCtx.beginPath();
+      pcCtx.moveTo(rect.icon.x + 2, rect.icon.y + 2);
+      pcCtx.lineTo(rect.icon.x + rect.icon.width - 2, rect.icon.y + rect.icon.height - 2);
+      pcCtx.moveTo(rect.icon.x + rect.icon.width - 2, rect.icon.y + 2);
+      pcCtx.lineTo(rect.icon.x + 2, rect.icon.y + rect.icon.height - 2);
+      pcCtx.stroke();
+
+      pcCtx.strokeStyle = "rgba(242, 240, 236, 0.42)";
+      pcCtx.lineWidth = 1.1;
+      pcCtx.beginPath();
+      pcCtx.moveTo(rect.topHandle.x + 1, rect.topHandle.y + rect.topHandle.height / 2);
+      pcCtx.lineTo(rect.topHandle.x + rect.topHandle.width - 1, rect.topHandle.y + rect.topHandle.height / 2);
+      pcCtx.moveTo(rect.bottomHandle.x + 1, rect.bottomHandle.y + rect.bottomHandle.height / 2);
+      pcCtx.lineTo(rect.bottomHandle.x + rect.bottomHandle.width - 1, rect.bottomHandle.y + rect.bottomHandle.height / 2);
+      pcCtx.stroke();
+    });
+  });
+}
+
+function axisAt(mouseX) {
+  return dims.find(dim => Math.abs(mouseX - pcX(dim.key)) < 16) || null;
+}
+
+function pointerValue(axisKey, mouseY) {
+  const dim = dimByKey(axisKey);
+  return clamp(pcY[axisKey].invert(mouseY), dim.domain[0], dim.domain[1]);
+}
+
+function updateCanvasCursor(mouseX, mouseY) {
+  const brushHit = hitBrush(mouseX, mouseY);
+  if (brushHit) {
+    if (brushHit.part === "remove") pcCanvas.style.cursor = "pointer";
+    else if (brushHit.part === "move") pcCanvas.style.cursor = "grab";
+    else pcCanvas.style.cursor = "ns-resize";
+    return;
+  }
+  pcCanvas.style.cursor = axisAt(mouseX) ? "crosshair" : "default";
+}
+
+function finishBrushInteraction() {
+  if (!brushInteraction) return;
+  if (pcCanvas.hasPointerCapture && brushInteraction.pointerId != null && pcCanvas.hasPointerCapture(brushInteraction.pointerId)) {
+    pcCanvas.releasePointerCapture(brushInteraction.pointerId);
+  }
+  if (brushInteraction.type === "create") {
+    expandTinyBrush(brushInteraction.axisKey, brushInteraction.brushId);
+    brushInteraction.brushId = writeAxisBrushes(brushInteraction.axisKey, getAxisBrushes(brushInteraction.axisKey), brushInteraction.brushId);
+  }
+  brushInteraction = null;
+  pcCanvas.style.cursor = "default";
+  renderAll();
+}
+
+pcCanvas.addEventListener("pointerdown", event => {
+  const rect = pcCanvas.getBoundingClientRect();
+  const mouseX = event.clientX - rect.left;
+  const mouseY = event.clientY - rect.top;
+  const brushHit = hitBrush(mouseX, mouseY);
+  if (brushHit?.part === "remove") {
+    removeAxisBrush(brushHit.axisKey, brushHit.brush.id);
+    syncHoveredProvider(null);
+    hideTooltip();
+    renderAll();
+    return;
+  }
+
+  if (brushHit?.part === "move") {
+    brushInteraction = {
+      type: "move",
+      pointerId: event.pointerId,
+      axisKey: brushHit.axisKey,
+      brushId: brushHit.brush.id,
+      startValue: pointerValue(brushHit.axisKey, mouseY),
+      startMin: brushHit.brush.min,
+      startMax: brushHit.brush.max
+    };
+    pcCanvas.setPointerCapture(event.pointerId);
+    pcCanvas.style.cursor = "grabbing";
+    return;
+  }
+
+  if (brushHit?.part === "resize-max" || brushHit?.part === "resize-min") {
+    brushInteraction = {
+      type: "resize",
+      edge: brushHit.part === "resize-max" ? "max" : "min",
+      pointerId: event.pointerId,
+      axisKey: brushHit.axisKey,
+      brushId: brushHit.brush.id,
+      fixedMin: brushHit.brush.min,
+      fixedMax: brushHit.brush.max
+    };
+    pcCanvas.setPointerCapture(event.pointerId);
+    pcCanvas.style.cursor = "ns-resize";
+    return;
+  }
+
+  const dim = axisAt(mouseX);
+  if (!dim) return;
+  const value = pointerValue(dim.key, mouseY);
+  const brushId = nextBrushId();
+  writeAxisBrushes(dim.key, [...getAxisBrushes(dim.key), { id: brushId, min: value, max: value }], brushId);
+  brushInteraction = {
+    type: "create",
+    pointerId: event.pointerId,
+    axisKey: dim.key,
+    brushId,
+    startValue: value
+  };
+  pcCanvas.setPointerCapture(event.pointerId);
+  pcCanvas.style.cursor = "grabbing";
+  renderAll({ refreshAlerts: false });
+});
+
+pcCanvas.addEventListener("pointermove", event => {
+  const rect = pcCanvas.getBoundingClientRect();
+  const mouseX = event.clientX - rect.left;
+  const mouseY = event.clientY - rect.top;
+
+  if (brushInteraction) {
+    if (brushInteraction.type === "create") {
+      const nextValue = pointerValue(brushInteraction.axisKey, mouseY);
+      brushInteraction.brushId = updateAxisBrush(brushInteraction.axisKey, brushInteraction.brushId, brush => ({
+        ...brush,
+        min: Math.min(brushInteraction.startValue, nextValue),
+        max: Math.max(brushInteraction.startValue, nextValue)
+      })) || brushInteraction.brushId;
+    } else if (brushInteraction.type === "move") {
+      const dim = dimByKey(brushInteraction.axisKey);
+      const nextValue = pointerValue(brushInteraction.axisKey, mouseY);
+      const delta = nextValue - brushInteraction.startValue;
+      const span = brushInteraction.startMax - brushInteraction.startMin;
+      let min = brushInteraction.startMin + delta;
+      let max = brushInteraction.startMax + delta;
+      if (min < dim.domain[0]) {
+        max += dim.domain[0] - min;
+        min = dim.domain[0];
+      }
+      if (max > dim.domain[1]) {
+        min -= max - dim.domain[1];
+        max = dim.domain[1];
+      }
+      if (max - min < span) min = max - span;
+      brushInteraction.brushId = updateAxisBrush(brushInteraction.axisKey, brushInteraction.brushId, brush => ({
+        ...brush,
+        min,
+        max
+      })) || brushInteraction.brushId;
+      const current = getAxisBrushes(brushInteraction.axisKey).find(brush => brush.id === brushInteraction.brushId);
+      if (current) {
+        brushInteraction.startValue = nextValue;
+        brushInteraction.startMin = current.min;
+        brushInteraction.startMax = current.max;
+      }
+    } else if (brushInteraction.type === "resize") {
+      const nextValue = pointerValue(brushInteraction.axisKey, mouseY);
+      brushInteraction.brushId = updateAxisBrush(brushInteraction.axisKey, brushInteraction.brushId, brush => ({
+        ...brush,
+        min: brushInteraction.edge === "min" ? Math.min(nextValue, brushInteraction.fixedMax - 0.5) : brushInteraction.fixedMin,
+        max: brushInteraction.edge === "max" ? Math.max(nextValue, brushInteraction.fixedMin + 0.5) : brushInteraction.fixedMax
+      })) || brushInteraction.brushId;
+      const current = getAxisBrushes(brushInteraction.axisKey).find(brush => brush.id === brushInteraction.brushId);
+      if (current) {
+        brushInteraction.fixedMin = current.min;
+        brushInteraction.fixedMax = current.max;
+      }
+    }
+    renderAll({ refreshAlerts: false });
+    return;
+  }
+
+  updateCanvasCursor(mouseX, mouseY);
+  const hovered = findNearestProvider(mouseX, mouseY);
+  syncHoveredProvider(hovered ? hovered.id : null);
+  if (hovered) showTooltip(event, `<strong>${hovered.name} (${hovered.id})</strong><span>${hovered.service} · Burnout ${hovered.burnout.toFixed(1)} · Risk ${hovered.risk.toFixed(1)}</span>`);
+  else hideTooltip();
+});
+
+pcCanvas.addEventListener("pointerup", finishBrushInteraction);
+pcCanvas.addEventListener("pointercancel", finishBrushInteraction);
+
+pcCanvas.addEventListener("dblclick", event => {
+  const rect = pcCanvas.getBoundingClientRect();
+  const mouseX = event.clientX - rect.left;
+  const dim = axisAt(mouseX);
+  if (!dim) return;
+  delete state.axisBrushes[dim.key];
+  renderAll();
+});
+
+pcCanvas.addEventListener("mouseleave", () => {
+  if (brushInteraction) return;
+  syncHoveredProvider(null);
+  hideTooltip();
+  pcCanvas.style.cursor = "default";
+});
+
+function renderBurnoutToast() {
+  const alert = getUrgentBurnoutAlert();
+
+  if (!alert) {
+    dismissBurnoutToast(true);
+    return;
+  }
+
+  if (state.toastAlertId === alert.id) return;
+  state.toastAlertId = alert.id;
+
+  burnoutToast.innerHTML = `
+    <div class="burnout-toast-head">
+      <div class="burnout-toast-label">Critical Burnout Alert</div>
+      <span class="burnout-toast-severity">${alert.severity.toUpperCase()}</span>
+    </div>
+    <div class="burnout-toast-body">
+      <p>${alert.title}</p>
+      <span>${alert.reason} Observed state: ${alert.observed}. ${alert.reference}.</span>
+    </div>
+    <button class="burnout-toast-close" type="button">Dismiss</button>
+  `;
+
+  burnoutToast.classList.add("visible");
+
+  const dismissButton = burnoutToast.querySelector(".burnout-toast-close");
+  if (dismissButton) {
+    dismissButton.addEventListener("click", () => dismissBurnoutToast(false), { once: true });
+  }
+
+  if (burnoutToastTimer) clearTimeout(burnoutToastTimer);
+  burnoutToastTimer = setTimeout(() => {
+    hideBurnoutToast();
+    burnoutToastTimer = null;
+  }, 9000);
+}
+
+function renderBurnoutTrend() {
+  const container = document.getElementById("burnoutBody");
+  container.innerHTML = "";
+  const providers = getFocusedProviders();
+  const focusService = getFocusService();
+
+  if (!providers.length) {
+    container.innerHTML = `<div class="empty-state">No clinicians in the current selection</div>`;
+    document.getElementById("burnoutBadge").textContent = "No data";
+    return;
+  }
+
+  const trend = buildBurnoutTrend(providers);
+  const latest = trend[trend.length - 1].avgRisk;
+  const delta = latest - trend[0].avgRisk;
+  const highRiskMax = d3.max(trend, item => item.highRiskCount) || 1;
+  const rect = container.getBoundingClientRect();
+  const width = rect.width || 520;
+  const height = rect.height || 280;
+  const margin = { top: 18, right: 22, bottom: 36, left: 42 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+  const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+  const x = d3.scalePoint().domain(trend.map(item => item.month)).range([0, innerWidth]);
+  const y = d3.scaleLinear().domain([20, 100]).range([innerHeight, 0]);
+  const yCount = d3.scaleLinear().domain([0, highRiskMax]).range([innerHeight, 0]);
+  const area = d3.area().x(item => x(item.month)).y0(innerHeight).y1(item => y(item.avgRisk)).curve(d3.curveMonotoneX);
+  const line = d3.line().x(item => x(item.month)).y(item => y(item.avgRisk)).curve(d3.curveMonotoneX);
+
+  document.getElementById("burnoutBadge").textContent =
+    `${delta >= 5 ? "Trending up" : delta >= 2 ? "Elevated" : "Stable"}${focusService ? ` · ${focusService}` : ""}`;
+
+  g.append("g")
+    .selectAll("line.horizontal-grid")
+    .data(y.ticks(5))
+    .enter()
+    .append("line")
+    .attr("x1", 0)
+    .attr("x2", innerWidth)
+    .attr("y1", value => y(value))
+    .attr("y2", value => y(value))
+    .attr("stroke", "rgba(166, 175, 186, 0.08)");
+
+  g.selectAll("rect.count-bar")
+    .data(trend)
+    .enter()
+    .append("rect")
+    .attr("x", item => x(item.month) - 8)
+    .attr("y", item => yCount(item.highRiskCount))
+    .attr("width", 16)
+    .attr("height", item => innerHeight - yCount(item.highRiskCount))
+    .attr("rx", 5)
+    .attr("fill", "rgba(169, 95, 91, 0.11)");
+
+  g.append("line")
+    .attr("x1", 0)
+    .attr("x2", innerWidth)
+    .attr("y1", y(BURNOUT_INTERVENTION_THRESHOLD))
+    .attr("y2", y(BURNOUT_INTERVENTION_THRESHOLD))
+    .attr("stroke", "rgba(169, 95, 91, 0.72)")
+    .attr("stroke-dasharray", "4,4");
+
+  g.append("text")
+    .attr("x", innerWidth - 2)
+    .attr("y", y(BURNOUT_INTERVENTION_THRESHOLD) - 8)
+    .attr("text-anchor", "end")
+    .attr("fill", "var(--red)")
+    .attr("font-size", 12)
+    .text(`Intervention ${BURNOUT_INTERVENTION_THRESHOLD}`);
+
+  g.append("path")
+    .datum(trend)
+    .attr("d", area)
+    .attr("fill", "rgba(154, 122, 69, 0.16)");
+
+  g.append("path")
+    .datum(trend.filter(item => item.avgRisk > BURNOUT_INTERVENTION_THRESHOLD))
+    .attr("d", d3.area().x(item => x(item.month)).y0(y(BURNOUT_INTERVENTION_THRESHOLD)).y1(item => y(item.avgRisk)).curve(d3.curveMonotoneX))
+    .attr("fill", "rgba(169, 95, 91, 0.1)");
+
+  g.append("path")
+    .datum(trend)
+    .attr("d", line)
+    .attr("fill", "none")
+    .attr("stroke", "var(--amber)")
+    .attr("stroke-width", 2.1);
+
+  g.selectAll("circle.trend-dot")
+    .data(trend)
+    .enter()
+    .append("circle")
+    .attr("cx", item => x(item.month))
+    .attr("cy", item => y(item.avgRisk))
+    .attr("r", item => item.avgRisk >= BURNOUT_INTERVENTION_THRESHOLD ? 4.4 : 3.2)
+    .attr("fill", item => item.avgRisk >= BURNOUT_INTERVENTION_THRESHOLD ? "var(--red)" : "var(--amber)")
+    .on("mouseover", function(event, item) {
+      d3.select(this).attr("r", 6);
+      showTooltip(event, `<strong>${item.month}</strong><span>Avg burnout ${item.avgRisk.toFixed(1)} · High-risk clinicians ${item.highRiskCount} · Interventions ${item.interventions}</span>`);
+    })
+    .on("mouseout", function(_, item) {
+      d3.select(this).attr("r", item.avgRisk >= BURNOUT_INTERVENTION_THRESHOLD ? 4.4 : 3.2);
+      hideTooltip();
+    });
+
+  g.append("g")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x).tickSize(0))
+    .call(axis => axis.selectAll("text").attr("fill", "var(--muted)").attr("font-size", 12))
+    .call(axis => axis.selectAll("line,path").attr("stroke", "rgba(166, 175, 186, 0.18)"));
+
+  g.append("g")
+    .call(d3.axisLeft(y).ticks(5))
+    .call(axis => axis.selectAll("text").attr("fill", "var(--muted)").attr("font-size", 12))
+    .call(axis => axis.selectAll("line,path").attr("stroke", "rgba(166, 175, 186, 0.18)"));
+}
+
+function renderEquityGaps() {
+  const container = document.getElementById("equityGapBody");
+  container.innerHTML = "";
+  const matrix = buildEquityGapMatrix(getVisibleProviders());
+  const focusService = getFocusService();
+
+  if (!matrix.length) {
+    container.innerHTML = `<div class="empty-state">No services in the current selection</div>`;
+    document.getElementById("equityGapBadge").textContent = "No data";
+    return;
+  }
+
+  const rect = container.getBoundingClientRect();
+  const width = rect.width || 520;
+  const height = rect.height || 280;
+  const margin = { top: 18, right: 18, bottom: 60, left: 112 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+  const cellWidth = innerWidth / patientCohorts.length;
+  const cellHeight = innerHeight / matrix.length;
+  const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+  const gapColor = d3.scaleLinear()
+    .domain([0, 4, 9, 16])
+    .range(["#26332c", "#253540", "#534839", "#714244"]);
+
+  document.getElementById("equityGapBadge").textContent = `Max gap ${matrix[0].maxGap.toFixed(1)}`;
+
+  matrix.forEach((row, rowIndex) => {
+    const rowSelected = focusService && row.service === focusService;
+    patientCohorts.forEach((cohort, colIndex) => {
+      const cell = row[cohort.key];
+      g.append("rect")
+        .attr("x", colIndex * cellWidth + 2)
+        .attr("y", rowIndex * cellHeight + 2)
+        .attr("width", cellWidth - 4)
+        .attr("height", cellHeight - 4)
+        .attr("rx", 7)
+        .attr("fill", gapColor(cell.gap))
+        .attr("stroke", rowSelected ? "rgba(242, 240, 236, 0.62)" : "rgba(242, 240, 236, 0.06)")
+        .attr("stroke-width", rowSelected ? 1.4 : 1)
+        .on("mouseover", function(event) {
+          d3.select(this).attr("stroke", "rgba(242, 240, 236, 0.88)").attr("stroke-width", 1.6);
+          showTooltip(event, `<strong>${row.service} · ${cohort.label}</strong><span>Gap ${cell.gap.toFixed(1)} pts below reference · Score ${cell.score.toFixed(1)}</span>`);
+        })
+        .on("mouseout", function() {
+          d3.select(this)
+            .attr("stroke", rowSelected ? "rgba(242, 240, 236, 0.62)" : "rgba(242, 240, 236, 0.06)")
+            .attr("stroke-width", rowSelected ? 1.4 : 1);
+          hideTooltip();
+        });
+
+      g.append("text")
+        .attr("x", colIndex * cellWidth + cellWidth / 2)
+        .attr("y", rowIndex * cellHeight + cellHeight / 2 + 4)
+        .attr("text-anchor", "middle")
+        .attr("fill", cell.gap >= 8 ? "#ffffff" : "var(--text)")
+        .attr("font-size", 12)
+        .attr("font-weight", 700)
+        .text(cell.gap.toFixed(1));
+    });
+
+    g.append("text")
+      .attr("x", -10)
+      .attr("y", rowIndex * cellHeight + cellHeight / 2 + 4)
+      .attr("text-anchor", "end")
+      .attr("fill", "var(--muted)")
+      .attr("font-size", 12)
+      .attr("font-weight", rowSelected ? 700 : 600)
+      .text(row.service);
+  });
+
+  patientCohorts.forEach((cohort, colIndex) => {
+    const label = cohort.label
+      .replace("Black / African Am.", "Black")
+      .replace("Hispanic / Latino", "Hispanic");
+    g.append("text")
+      .attr("x", colIndex * cellWidth + cellWidth / 2)
+      .attr("y", innerHeight + 18)
+      .attr("text-anchor", "middle")
+      .attr("fill", "var(--muted-2)")
+      .attr("font-size", 12)
+      .text(label);
+  });
+
+  g.append("text")
+    .attr("x", innerWidth)
+    .attr("y", innerHeight + 40)
+    .attr("text-anchor", "end")
+    .attr("fill", "var(--muted)")
+    .attr("font-size", 12)
+    .text("Gap points below equity reference");
+}
+
+function renderScatter() {
+  const container = document.getElementById("scatterBody");
+  container.innerHTML = "";
+  const rect = container.getBoundingClientRect();
+  const width = rect.width || 520;
+  const height = rect.height || 280;
+  const margin = { top: 18, right: 18, bottom: 42, left: 48 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+  const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+  const visible = getVisibleProviders();
+  const x = d3.scaleLinear().domain([30, 100]).range([0, innerWidth]);
+  const y = d3.scaleLinear().domain([35, 100]).range([innerHeight, 0]);
+  const radiusDomain = visible.length ? d3.extent(visible, d => d.patientLoad) : [60, 200];
+  const radius = d3.scaleSqrt().domain(radiusDomain).range([4, 15]);
+
+  g.append("g")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x).ticks(5))
+    .call(axis => axis.selectAll("text").attr("fill", "var(--muted)").attr("font-size", 12))
+    .call(axis => axis.selectAll("line,path").attr("stroke", "rgba(166, 175, 186, 0.2)"));
+
+  g.append("g")
+    .call(d3.axisLeft(y).ticks(5))
+    .call(axis => axis.selectAll("text").attr("fill", "var(--muted)").attr("font-size", 12))
+    .call(axis => axis.selectAll("line,path").attr("stroke", "rgba(166, 175, 186, 0.2)"));
+
+  g.append("g")
+    .selectAll("line.horizontal-grid")
+    .data(y.ticks(5))
+    .enter()
+    .append("line")
+    .attr("x1", 0)
+    .attr("x2", innerWidth)
+    .attr("y1", value => y(value))
+    .attr("y2", value => y(value))
+    .attr("stroke", "rgba(166, 175, 186, 0.08)");
+
+  g.append("g")
+    .selectAll("line.vertical-grid")
+    .data(x.ticks(5))
+    .enter()
+    .append("line")
+    .attr("y1", 0)
+    .attr("y2", innerHeight)
+    .attr("x1", value => x(value))
+    .attr("x2", value => x(value))
+    .attr("stroke", "rgba(166, 175, 186, 0.08)");
+
+  g.append("line")
+    .attr("x1", x(64))
+    .attr("x2", x(64))
+    .attr("y1", 0)
+    .attr("y2", innerHeight)
+    .attr("stroke", "rgba(106, 133, 150, 0.74)")
+    .attr("stroke-dasharray", "4,4");
+
+  g.append("line")
+    .attr("x1", 0)
+    .attr("x2", innerWidth)
+    .attr("y1", y(68))
+    .attr("y2", y(68))
+    .attr("stroke", "rgba(71, 120, 91, 0.74)")
+    .attr("stroke-dasharray", "4,4");
+
+  g.append("text")
+    .attr("x", x(64) + 8)
+    .attr("y", 12)
+    .attr("fill", "var(--blue)")
+    .attr("font-size", 12)
+    .text("Parity target");
+
+  g.append("text")
+    .attr("x", innerWidth - 2)
+    .attr("y", y(68) - 8)
+    .attr("text-anchor", "end")
+    .attr("fill", "var(--green)")
+    .attr("font-size", 12)
+    .text("Value target");
+
+  g.selectAll("circle")
+    .data(visible)
+    .enter()
+    .append("circle")
+    .attr("cx", provider => x(provider.equity))
+    .attr("cy", provider => y(provider.value))
+    .attr("r", provider => radius(provider.patientLoad))
+    .attr("fill", provider => tierColor(provider.tier))
+    .attr("opacity", provider => isHighlighted(provider) ? 0.96 : 0.7)
+    .attr("stroke", provider => isHighlighted(provider) ? "rgba(242, 240, 236, 0.82)" : "rgba(242,240,236,0.14)")
+    .attr("stroke-width", provider => isHighlighted(provider) ? 2.4 : 1)
+    .on("mouseover", function(event, provider) {
+      d3.select(this).attr("stroke", "var(--accent-cool)").attr("stroke-width", 2.4).attr("opacity", 1);
+      showTooltip(event, `<strong>${provider.name} (${provider.id})</strong><span>${provider.service} · Equity closure ${provider.equity.toFixed(1)} · Value realization ${provider.value.toFixed(1)} · Burnout ${provider.burnout.toFixed(1)}</span>`);
+    })
+    .on("mouseout", function(_, provider) {
+      d3.select(this)
+        .attr("stroke", isHighlighted(provider) ? "rgba(242, 240, 236, 0.82)" : "rgba(242,240,236,0.14)")
+        .attr("stroke-width", isHighlighted(provider) ? 2.4 : 1)
+        .attr("opacity", isHighlighted(provider) ? 0.96 : 0.7);
+      hideTooltip();
+    });
+
+  g.append("text")
+    .attr("x", innerWidth / 2)
+    .attr("y", innerHeight + 34)
+    .attr("text-anchor", "middle")
+    .attr("fill", "var(--muted)")
+    .attr("font-size", 12)
+    .text("Equity gap closure →");
+
+  g.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -innerHeight / 2)
+    .attr("y", -34)
+    .attr("text-anchor", "middle")
+    .attr("fill", "var(--muted)")
+    .attr("font-size", 12)
+    .text("Value realization →");
+}
+
+function renderBars() {
+  const container = document.getElementById("barBody");
+  container.innerHTML = "";
+  const rect = container.getBoundingClientRect();
+  const width = rect.width || 520;
+  const height = rect.height || 280;
+  const margin = { top: 18, right: 18, bottom: 20, left: 110 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+  const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+  const summaries = serviceSummary(getVisibleProviders()).sort((a, b) => a.deviation - b.deviation);
+  if (!summaries.length) {
+    g.append("text")
+      .attr("x", innerWidth / 2)
+      .attr("y", innerHeight / 2)
+      .attr("text-anchor", "middle")
+      .attr("fill", "var(--muted)")
+      .attr("font-size", 12)
+      .text("No services in the current selection");
+    return;
+  }
+  const x = d3.scaleLinear().domain(d3.extent(summaries, item => item.deviation) || [-10, 10]).nice().range([0, innerWidth]);
+  const y = d3.scaleBand().domain(summaries.map(item => item.service)).range([0, innerHeight]).padding(0.24);
+
+  g.append("line")
+    .attr("x1", x(0))
+    .attr("x2", x(0))
+    .attr("y1", 0)
+    .attr("y2", innerHeight)
+    .attr("stroke", "rgba(242, 240, 236, 0.24)")
+    .attr("stroke-dasharray", "4,4");
+
+  g.append("g")
+    .call(d3.axisLeft(y).tickSize(0))
+    .call(axis => axis.selectAll("text").attr("fill", "var(--muted)").attr("font-size", 12))
+    .call(axis => axis.selectAll("line,path").attr("stroke", "none"));
+
+  g.append("g")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x).ticks(5))
+    .call(axis => axis.selectAll("text").attr("fill", "var(--muted)").attr("font-size", 12))
+    .call(axis => axis.selectAll("line,path").attr("stroke", "rgba(166, 175, 186, 0.2)"));
+
+  g.selectAll("rect")
+    .data(summaries)
+    .enter()
+    .append("rect")
+    .attr("x", item => x(Math.min(0, item.deviation)))
+    .attr("y", item => y(item.service))
+    .attr("width", item => Math.abs(x(item.deviation) - x(0)))
+    .attr("height", y.bandwidth())
+    .attr("rx", 8)
+    .attr("fill", item => {
+      const selected = getSelectedAlert() && getSelectedAlert().entityType === "service" && getSelectedAlert().entityId === item.service;
+      if (selected) return "rgba(242, 240, 236, 0.88)";
+      return item.deviation >= 0 ? "rgba(47, 125, 87, 0.72)" : "rgba(183, 75, 73, 0.72)";
+    })
+    .on("mouseover", function(event, item) {
+      d3.select(this).attr("opacity", 1);
+      showTooltip(event, `<strong>${item.service}</strong><span>Composite deviation ${item.deviation.toFixed(1)} pts · Quality ${item.quality.toFixed(1)} · Equity closure ${item.equity.toFixed(1)}</span>`);
+    })
+    .on("mouseout", function() {
+      d3.select(this).attr("opacity", 1);
+      hideTooltip();
+    });
+
+  g.selectAll("text.value")
+    .data(summaries)
+    .enter()
+    .append("text")
+    .attr("x", item => x(item.deviation) + (item.deviation >= 0 ? 8 : -8))
+    .attr("y", item => (y(item.service) || 0) + y.bandwidth() / 2 + 4)
+    .attr("text-anchor", item => item.deviation >= 0 ? "start" : "end")
+    .attr("fill", "var(--text)")
+    .attr("font-size", 12)
+    .text(item => `${item.deviation >= 0 ? "+" : ""}${item.deviation.toFixed(1)}`);
+}
+
+function renderKPIs() {
+  const providers = getVisibleProviders();
+  const alerts = getAlerts();
+  const summaries = serviceSummary(providers);
+  const avgBurnout = average(providers, "burnout");
+  const avgEquity = average(providers, "equity");
+  const avgValue = average(providers, "value");
+  const offTarget = summaries.filter(item => item.deviation < 0).length;
+  const critical = alerts.filter(alert => alert.severity === "critical").length;
+
+  document.getElementById("kpiRow").innerHTML = [
+    {
+      label: "Clinicians in review",
+      value: providers.length,
+      sub: state.service === "all" ? "All services" : state.service
+    },
+    {
+      label: "Active alerts",
+      value: alerts.length,
+      sub: critical ? `${critical} critical` : "No critical alerts"
+    },
+    {
+      label: "Services below target",
+      value: offTarget,
+      sub: `${summaries.length} services reviewed`
+    },
+    {
+      label: "Burnout mean",
+      value: `${avgBurnout.toFixed(1)}`,
+      sub: `Watch threshold ${BURNOUT_WATCH_THRESHOLD}`
+    },
+    {
+      label: "Equity mean",
+      value: `${avgEquity.toFixed(1)}`,
+      sub: "Gap-closure target 64"
+    },
+    {
+      label: "Value mean",
+      value: `${avgValue.toFixed(1)}`,
+      sub: "Realization target 68"
+    }
+  ].map(item => `
+    <article class="kpi">
+      <div class="kpi-value">${item.value}</div>
+      <div class="kpi-copy">
+        <div class="kpi-label">${item.label}</div>
+        <div class="kpi-sub">${item.sub}</div>
+      </div>
+    </article>
+  `).join("");
+}
+
+function buildAlertFeedMarkup(displayAlerts) {
+  if (!displayAlerts.length) {
+    return `<div class="alert-item"><div class="alert-title">No active alerts</div><div class="alert-copy">No benchmark exceptions are open in the current review scope.</div></div>`;
+  }
+
+  return displayAlerts.map((alert, index) => `
+    <button class="alert-item ${alert.id === state.selectedAlertId ? "active" : ""}" data-alert-id="${alert.id}" type="button" style="animation-delay:${index * 34}ms">
+      <div class="alert-top">
+        <div class="alert-title">${alert.title}</div>
+        <span class="pill ${severityClass(alert.severity)}">${alert.severity}</span>
+      </div>
+      <div class="alert-meta">${alert.subtitle}</div>
+      <div class="alert-copy">${alert.reason}</div>
+    </button>
+  `).join("");
+}
+
+function buildAlertFeedSignature(displayAlerts) {
+  return displayAlerts.length
+    ? displayAlerts.map(alert => [alert.id, alert.severity, alert.title, alert.subtitle, alert.reason].join("|")).join("||")
+    : "empty";
+}
+
+function syncAlertFeedSelection() {
+  alertFeed.querySelectorAll("[data-alert-id]").forEach(button => {
+    button.classList.toggle("active", button.dataset.alertId === state.selectedAlertId);
+  });
+}
+
+function renderAlerts() {
+  const alerts = getAlerts();
+  const displayAlerts = getDisplayAlerts();
+  ensureSelectedAlert();
+  document.getElementById("alertCountBadge").textContent =
+    alerts.length > displayAlerts.length ? `${alerts.length} active · showing ${displayAlerts.length}` : `${alerts.length} active`;
+  const nextSignature = buildAlertFeedSignature(displayAlerts);
+  if (nextSignature !== alertFeedSignature) {
+    alertFeed.innerHTML = buildAlertFeedMarkup(displayAlerts);
+    alertFeedSignature = nextSignature;
+  }
+  syncAlertFeedSelection();
+}
+
+alertFeed.addEventListener("click", event => {
+  const button = event.target.closest("[data-alert-id]");
+  if (!button) return;
+  state.selectedAlertId = button.dataset.alertId;
+  renderAll({ refreshAlerts: false });
+});
+
+function renderVerification() {
+  const alert = getSelectedAlert();
+  const panel = document.getElementById("verifyPanel");
+  if (!alert) {
+    panel.innerHTML = `
+      <div class="verify-hero">
+        <h4>No selected alert</h4>
+        <p>Select a benchmark exception to inspect observed values against the review reference.</p>
+      </div>
+    `;
+    return;
+  }
+
+  panel.innerHTML = `
+    <div class="verify-hero">
+      <div class="alert-top">
+        <h4>${alert.title}</h4>
+        <span class="pill ${severityClass(alert.severity)}">${alert.severity}</span>
+      </div>
+      <p>${alert.subtitle}</p>
+    </div>
+    <div class="evidence-grid">
+      <div class="evidence-card">
+        <strong>Observed state</strong>
+        <span>${alert.observed}</span>
+      </div>
+      <div class="evidence-card">
+        <strong>Reference state</strong>
+        <span>${alert.reference}</span>
+      </div>
+    </div>
+    <div class="evidence-list">
+      ${alert.evidence.map(([label, value]) => `<div class="evidence-row"><span>${humanizeKey(label)}</span><span>${value}</span></div>`).join("")}
+    </div>
+  `;
+}
+
+function getTableProviders() {
+  const ranked = getVisibleProviders().slice().sort((a, b) => b.risk - a.risk);
+  const pinnedIds = [];
+  if (state.hoveredId) pinnedIds.push(state.hoveredId);
+  const alert = getSelectedAlert();
+  if (alert?.entityType === "provider" && !pinnedIds.includes(alert.entityId)) pinnedIds.push(alert.entityId);
+
+  const rows = [];
+  pinnedIds.forEach(id => {
+    const provider = ranked.find(item => item.id === id);
+    if (provider && !rows.some(item => item.id === provider.id)) rows.push(provider);
+  });
+  ranked.forEach(provider => {
+    if (rows.length >= 10) return;
+    if (!rows.some(item => item.id === provider.id)) rows.push(provider);
+  });
+  return rows.slice(0, 10);
+}
+
+function renderTable() {
+  const rows = getTableProviders();
+  document.getElementById("tableBadge").textContent = `Showing ${rows.length}`;
+  document.getElementById("cohortBody").innerHTML = rows.map(provider => `
+    <tr class="cohort-row ${isHighlighted(provider) ? "highlight" : ""} ${provider.id === state.hoveredId ? "hovered" : ""}">
+      <td>
+        <div class="clinician-name">${provider.name}</div>
+        <div class="clinician-id">${provider.id}</div>
+      </td>
+      <td>${provider.service}</td>
+      <td class="numeric risk-cell risk-${burnoutTier(provider.burnout)}">${provider.burnout.toFixed(1)}</td>
+      <td class="numeric">${provider.quality.toFixed(1)}</td>
+      <td class="numeric">${provider.equity.toFixed(1)}</td>
+      <td class="numeric">${provider.value.toFixed(1)}</td>
+      <td class="numeric risk-cell risk-${provider.tier}">${provider.risk.toFixed(1)}</td>
+    </tr>
+  `).join("");
+}
+
+function updateNarrative() {
+  const config = scenarioConfig[state.scenario];
+  const scoped = getScopedProviders();
+  const activeBrushCount = Object.entries(state.axisBrushes).reduce(
+    (sum, [axisKey, brushes]) => sum + brushes.filter(brush => isMeaningfulBrush(axisKey, brush)).length,
+    0
+  );
+  const visible = getVisibleProviders();
+  const serviceLabel = state.service === "all" ? "All services" : state.service;
+  document.getElementById("filterSummary").textContent = `${config.label} · ${serviceLabel} · ${visible.length} visible of ${scoped.length} benchmarked clinicians`;
+  document.getElementById("workspaceBadge").textContent = `${visible.length} visible · target + mean overlays`;
+  document.getElementById("workspaceScope").textContent = `${serviceLabel} · ${visible.length}/${scoped.length} clinicians visible`;
+  document.getElementById("workspaceBenchmark").textContent = `Benchmark: review target + ${serviceLabel === "All services" ? "scoped cohort mean" : `${serviceLabel} mean`}`;
+  document.getElementById("brushSummary").textContent = activeBrushCount
+    ? `${activeBrushCount} filter${activeBrushCount > 1 ? "s" : ""} applied`
+    : "No filters applied";
+}
+
+function renderAll({ refreshAlerts = true } = {}) {
+  if (refreshAlerts) refreshAlertViewState();
+  ensureSelectedAlert();
+  updateNarrative();
+  renderBurnoutToast();
+  renderKPIs();
+  renderAlerts();
+  renderVerification();
+  renderParallel();
+  renderBurnoutTrend();
+  renderEquityGaps();
+  renderScatter();
+  renderBars();
+  renderTable();
+  syncParentFrameHeight();
+}
+
+scenarioSelect.addEventListener("change", () => {
+  stopDemo(false);
+  state.scenario = scenarioSelect.value;
+  state.axisBrushes = {};
+  state.selectedAlertId = null;
+  state.hoveredId = null;
+  dismissBurnoutToast(true);
+  renderAll();
+});
+
+serviceSelect.addEventListener("change", () => {
+  stopDemo(false);
+  state.service = serviceSelect.value;
+  state.selectedAlertId = null;
+  dismissBurnoutToast(true);
+  renderAll();
+});
+
+document.getElementById("resetBtn").addEventListener("click", () => {
+  stopDemo(false);
+  state.scenario = DEFAULT_SCENARIO;
+  state.service = "all";
+  state.axisBrushes = {};
+  state.selectedAlertId = null;
+  state.hoveredId = null;
+  dismissBurnoutToast(true);
+  scenarioSelect.value = DEFAULT_SCENARIO;
+  serviceSelect.value = "all";
+  renderAll();
+});
+
+demoToggleBtn.addEventListener("click", () => {
+  if (demoRunning) stopDemo();
+  else startDemo();
+});
+
+document.addEventListener("pointerdown", event => {
+  if (!demoRunning) return;
+  if (event.target.closest("#demoToggleBtn")) return;
+  stopDemo();
+}, true);
+
+window.addEventListener("resize", () => {
+  clearTimeout(window.__atlasResize);
+  window.__atlasResize = setTimeout(() => {
+    initParallel();
+    renderAll();
+    syncParentFrameHeight();
+  }, 120);
+});
+
+scenarioSelect.value = state.scenario;
+serviceSelect.value = state.service;
+initParallel();
+renderAll();
+startBriefingSequence();
+startDemo();
+syncParentFrameHeight();
+</script>
+</body>
+<script>'undefined'=== typeof _trfq || (window._trfq = []);'undefined'=== typeof _trfd && (window._trfd=[]),_trfd.push({'tccl.baseHost':'secureserver.net'},{'ap':'cpsh-oh'},{'server':'p3plzcpnl504863'},{'dcenter':'p3'},{'cp_id':'10904367'},{'cp_cl':'8'}) // Monitoring performance to make your website faster. If you want to opt-out, please contact web hosting support.</script><script src='https://img1.wsimg.com/traffic-assets/js/tccl.min.js'></script></html>

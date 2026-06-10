@@ -1,1 +1,2342 @@
-<!doctype html><meta charset="utf-8"><title>north-bridge</title><p>Prototype source pending. Live case study: <a href="https://siarheimardovich.com/north-bridge/">siarheimardovich.com/north-bridge/</a></p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NorthBridge Coverage Workspace</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --sapBackgroundColor: #f5f6f7;
+      --sapSurfaceColor: #ffffff;
+      --sapSurfaceAlt: #f8fbff;
+      --sapHeaderColor: #eef5fb;
+      --sapShellBarColor: #ffffff;
+      --sapShellBarBorder: #dbe4ed;
+      --sapBorderColor: #d5dce3;
+      --sapBorderStrong: #b8c6d3;
+      --sapTextColor: #223548;
+      --sapTextSecondary: #556b82;
+      --sapTextMuted: #70889f;
+      --sapAccentColor: #0070f2;
+      --sapAccentSoft: #ebf5ff;
+      --sapAccentStrong: #0057d2;
+      --sapPositiveColor: #256f3a;
+      --sapPositiveSoft: #edf8ef;
+      --sapCriticalColor: #9a4600;
+      --sapCriticalSoft: #fff3e7;
+      --sapNegativeColor: #aa0808;
+      --sapNegativeSoft: #ffebeb;
+      --sapInfoSoft: #eff4f9;
+      --sapShadow: 0 0.125rem 0.5rem rgba(34, 53, 72, 0.08);
+      --sapRadiusS: 0.75rem;
+      --sapRadiusM: 1rem;
+      --sapRadiusL: 1.25rem;
+      --sapSpacingXs: 0.5rem;
+      --sapSpacingS: 0.75rem;
+      --sapSpacingM: 1rem;
+      --sapSpacingL: 1.5rem;
+      --sapSpacingXl: 2rem;
+      --sapShellHeight: 3.5rem;
+      --sapPageWidth: 92rem;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--sapBackgroundColor);
+      color: var(--sapTextColor);
+      font-family: "72", "72full", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.45;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      background: none;
+      cursor: pointer;
+    }
+
+    .shellbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      height: var(--sapShellHeight);
+      background: var(--sapShellBarColor);
+      border-bottom: 1px solid var(--sapShellBarBorder);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 var(--sapSpacingL);
+      box-shadow: 0 1px 0 rgba(34, 53, 72, 0.02);
+    }
+
+    .shellbar-inner {
+      width: min(100%, var(--sapPageWidth));
+      display: flex;
+      align-items: center;
+      gap: var(--sapSpacingM);
+    }
+
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: var(--sapSpacingS);
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 0.65rem;
+      background: linear-gradient(135deg, #0a6ed1, #2b7cff 60%, #7db6ff);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+    }
+
+    .brand-copy {
+      min-width: 0;
+    }
+
+    .brand-copy strong,
+    .brand-copy span {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand-copy strong {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .brand-copy span {
+      font-size: 0.75rem;
+      color: var(--sapTextSecondary);
+    }
+
+    .shell-search {
+      flex: 1;
+      min-width: 12rem;
+      height: 2.5rem;
+      border-radius: 999px;
+      background: var(--sapBackgroundColor);
+      border: 1px solid var(--sapBorderColor);
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      padding: 0 0.95rem;
+      color: var(--sapTextSecondary);
+    }
+
+    .shell-search input {
+      flex: 1;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--sapTextColor);
+    }
+
+    .shell-tools {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tool-button {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--sapTextSecondary);
+      transition: 0.18s ease;
+    }
+
+    .tool-button:hover {
+      background: var(--sapAccentSoft);
+      border-color: rgba(0, 112, 242, 0.12);
+      color: var(--sapAccentStrong);
+    }
+
+    .avatar-button {
+      min-width: 2.5rem;
+      height: 2.5rem;
+      padding: 0 0.375rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--sapTextColor);
+    }
+
+    .avatar-badge {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #7c4dff, #4f81ff);
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .app {
+      width: min(100%, var(--sapPageWidth));
+      margin: 0 auto;
+      padding: var(--sapSpacingL);
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .dynamic-header {
+      background: linear-gradient(180deg, var(--sapHeaderColor), var(--sapSurfaceColor));
+      border: 1px solid var(--sapBorderColor);
+      border-radius: var(--sapRadiusL);
+      padding: var(--sapSpacingL);
+      box-shadow: var(--sapShadow);
+      margin-bottom: var(--sapSpacingL);
+    }
+
+    .breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--sapTextMuted);
+      margin-bottom: var(--sapSpacingM);
+      flex-wrap: wrap;
+    }
+
+    .breadcrumbs button,
+    .breadcrumbs span {
+      color: inherit;
+    }
+
+    .header-main {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--sapSpacingL);
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .title-block {
+      min-width: 16rem;
+      flex: 1;
+    }
+
+    .eyebrow {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--sapAccentStrong);
+      margin-bottom: 0.5rem;
+    }
+
+    .page-title {
+      font-size: clamp(1.8rem, 3vw, 2.5rem);
+      line-height: 1.1;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .page-subtitle {
+      margin-top: 0.625rem;
+      color: var(--sapTextSecondary);
+      max-width: 48rem;
+      font-size: 1rem;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .button {
+      min-height: 2.75rem;
+      padding: 0 1rem;
+      border-radius: 0.875rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      transition: 0.18s ease;
+      border: 1px solid transparent;
+    }
+
+    .button.primary {
+      background: var(--sapAccentColor);
+      color: white;
+      box-shadow: 0 0.25rem 1rem rgba(0, 112, 242, 0.18);
+    }
+
+    .button.primary:hover {
+      background: var(--sapAccentStrong);
+    }
+
+    .button.secondary {
+      background: white;
+      border-color: var(--sapBorderColor);
+      color: var(--sapTextColor);
+    }
+
+    .button.secondary:hover {
+      border-color: var(--sapBorderStrong);
+      background: var(--sapSurfaceAlt);
+    }
+
+    .kpi-row {
+      margin-top: var(--sapSpacingL);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+      gap: var(--sapSpacingM);
+    }
+
+    .kpi-card {
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(122, 155, 184, 0.22);
+      border-radius: var(--sapRadiusM);
+      padding: 1rem;
+    }
+
+    .kpi-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 0.35rem;
+    }
+
+    .kpi-label {
+      font-size: 0.8rem;
+      color: var(--sapTextSecondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .flow-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.625rem;
+      margin: var(--sapSpacingL) 0;
+    }
+
+    .flow-step {
+      border-radius: 999px;
+      padding: 0.45rem 0.85rem;
+      background: white;
+      border: 1px solid var(--sapBorderColor);
+      color: var(--sapTextSecondary);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .flow-step.active {
+      background: var(--sapAccentSoft);
+      border-color: rgba(0, 112, 242, 0.22);
+      color: var(--sapAccentStrong);
+    }
+
+    .message-strip {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      background: var(--sapAccentSoft);
+      border: 1px solid rgba(0, 112, 242, 0.16);
+      border-radius: var(--sapRadiusM);
+      padding: 0.95rem 1rem;
+      margin-bottom: var(--sapSpacingL);
+    }
+
+    .message-strip.hidden {
+      display: none;
+    }
+
+    .message-title {
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: var(--sapSpacingL);
+    }
+
+    .stack {
+      display: grid;
+      gap: var(--sapSpacingL);
+    }
+
+    .card {
+      background: var(--sapSurfaceColor);
+      border: 1px solid var(--sapBorderColor);
+      border-radius: var(--sapRadiusL);
+      box-shadow: var(--sapShadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 1.1rem 1.25rem 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 1.05rem;
+      line-height: 1.2;
+    }
+
+    .card-subtitle {
+      margin-top: 0.3rem;
+      color: var(--sapTextSecondary);
+      font-size: 0.92rem;
+    }
+
+    .card-body {
+      padding: 1.1rem 1.25rem 1.25rem;
+    }
+
+    .hero-card {
+      background:
+        radial-gradient(circle at top right, rgba(0, 112, 242, 0.18), transparent 33%),
+        linear-gradient(180deg, #fafdff, #ffffff);
+    }
+
+    .status-rail {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--sapCriticalColor);
+      margin-bottom: 0.8rem;
+    }
+
+    .status-dot {
+      width: 0.6rem;
+      height: 0.6rem;
+      border-radius: 999px;
+      background: var(--sapCriticalColor);
+      box-shadow: 0 0 0 0.25rem rgba(154, 70, 0, 0.12);
+    }
+
+    .hero-title {
+      font-size: clamp(1.4rem, 2vw, 1.95rem);
+      line-height: 1.1;
+      margin: 0 0 0.8rem;
+    }
+
+    .hero-copy {
+      margin: 0;
+      color: var(--sapTextSecondary);
+      max-width: 42rem;
+    }
+
+    .hero-detail-grid {
+      margin-top: 1.25rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+      gap: 0.9rem;
+    }
+
+    .detail-chip {
+      padding: 0.85rem 0.95rem;
+      border-radius: var(--sapRadiusM);
+      background: rgba(248, 251, 255, 0.95);
+      border: 1px solid var(--sapBorderColor);
+    }
+
+    .detail-chip span {
+      display: block;
+    }
+
+    .detail-chip .label {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--sapTextMuted);
+      margin-bottom: 0.35rem;
+    }
+
+    .detail-chip .value {
+      font-size: 0.94rem;
+      font-weight: 700;
+    }
+
+    .signal-list,
+    .task-list,
+    .task-link-list,
+    .fund-list {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .signal-row,
+    .task-row,
+    .fund-row {
+      border-radius: var(--sapRadiusM);
+      border: 1px solid var(--sapBorderColor);
+      padding: 0.9rem 0.95rem;
+      background: var(--sapSurfaceAlt);
+    }
+
+    .signal-row {
+      text-align: left;
+      width: 100%;
+      transition: 0.18s ease;
+    }
+
+    .signal-row:hover {
+      border-color: rgba(0, 112, 242, 0.22);
+      background: #fcfdff;
+      transform: translateY(-1px);
+    }
+
+    .row-title {
+      font-weight: 700;
+      font-size: 0.96rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .row-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--sapTextSecondary);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border-radius: 999px;
+      padding: 0.24rem 0.55rem;
+      font-size: 0.76rem;
+      font-weight: 700;
+      background: var(--sapInfoSoft);
+      color: var(--sapTextSecondary);
+    }
+
+    .pill.critical {
+      background: var(--sapCriticalSoft);
+      color: var(--sapCriticalColor);
+    }
+
+    .pill.positive {
+      background: var(--sapPositiveSoft);
+      color: var(--sapPositiveColor);
+    }
+
+    .pill.accent {
+      background: var(--sapAccentSoft);
+      color: var(--sapAccentStrong);
+    }
+
+    .company-layout {
+      display: grid;
+      grid-template-columns: 20rem 1fr;
+      gap: var(--sapSpacingL);
+    }
+
+    .anchor-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.625rem;
+      margin-bottom: var(--sapSpacingL);
+    }
+
+    .anchor-link {
+      padding: 0.55rem 0.85rem;
+      border-radius: 999px;
+      background: white;
+      border: 1px solid var(--sapBorderColor);
+      color: var(--sapTextSecondary);
+      font-weight: 700;
+      font-size: 0.82rem;
+    }
+
+    .anchor-link.active {
+      color: var(--sapAccentStrong);
+      background: var(--sapAccentSoft);
+      border-color: rgba(0, 112, 242, 0.22);
+    }
+
+    .note-rail {
+      position: sticky;
+      top: calc(var(--sapShellHeight) + 1rem);
+      align-self: start;
+    }
+
+    .note-list-button {
+      width: 100%;
+      text-align: left;
+      border-radius: var(--sapRadiusM);
+      border: 1px solid transparent;
+      padding: 0.95rem;
+      background: transparent;
+      transition: 0.18s ease;
+    }
+
+    .note-list-button:hover {
+      background: var(--sapSurfaceAlt);
+      border-color: var(--sapBorderColor);
+    }
+
+    .note-list-button.active {
+      background: var(--sapAccentSoft);
+      border-color: rgba(0, 112, 242, 0.18);
+    }
+
+    .object-grid {
+      display: grid;
+      gap: var(--sapSpacingL);
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+      gap: var(--sapSpacingM);
+    }
+
+    .mini-card {
+      border: 1px solid var(--sapBorderColor);
+      border-radius: var(--sapRadiusM);
+      padding: 1rem;
+      background: white;
+    }
+
+    .mini-card h4 {
+      margin: 0 0 0.4rem;
+      font-size: 0.84rem;
+      color: var(--sapTextMuted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .mini-card p {
+      margin: 0;
+      font-weight: 700;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .section-title h3 {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+
+    .section-title p {
+      margin: 0.25rem 0 0;
+      color: var(--sapTextSecondary);
+      font-size: 0.92rem;
+    }
+
+    .tabbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .tab {
+      padding: 0.6rem 0.8rem;
+      border-radius: 0.875rem;
+      border: 1px solid var(--sapBorderColor);
+      background: var(--sapSurfaceAlt);
+      color: var(--sapTextSecondary);
+      font-weight: 700;
+      font-size: 0.84rem;
+    }
+
+    .tab.active {
+      background: var(--sapAccentSoft);
+      border-color: rgba(0, 112, 242, 0.22);
+      color: var(--sapAccentStrong);
+    }
+
+    .tab-panel {
+      display: none;
+      border-top: 1px solid var(--sapBorderColor);
+      padding-top: 1rem;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .rich-copy {
+      color: var(--sapTextSecondary);
+      display: grid;
+      gap: 0.9rem;
+    }
+
+    .rich-copy p {
+      margin: 0;
+    }
+
+    .rich-copy strong {
+      color: var(--sapTextColor);
+    }
+
+    .split-fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+      gap: var(--sapSpacingM);
+    }
+
+    .field-block {
+      padding: 0.95rem;
+      border-radius: var(--sapRadiusM);
+      background: var(--sapSurfaceAlt);
+      border: 1px solid var(--sapBorderColor);
+    }
+
+    .field-block .key {
+      display: block;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--sapTextMuted);
+      margin-bottom: 0.35rem;
+    }
+
+    .field-block .value {
+      font-weight: 700;
+    }
+
+    .task-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .task-row h4,
+    .fund-row h4 {
+      margin: 0 0 0.35rem;
+      font-size: 0.95rem;
+    }
+
+    .task-row p,
+    .fund-row p {
+      margin: 0;
+      color: var(--sapTextSecondary);
+      font-size: 0.88rem;
+    }
+
+    .confirmation-strip {
+      margin-top: 1rem;
+      border-radius: var(--sapRadiusM);
+      padding: 0.95rem 1rem;
+      background: var(--sapPositiveSoft);
+      border: 1px solid rgba(37, 111, 58, 0.18);
+      color: var(--sapPositiveColor);
+      display: none;
+    }
+
+    .confirmation-strip.visible {
+      display: block;
+    }
+
+    .dialog-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(34, 53, 72, 0.26);
+      backdrop-filter: blur(0.2rem);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      z-index: 40;
+    }
+
+    .dialog-backdrop.open {
+      display: flex;
+    }
+
+    .dialog {
+      width: min(100%, 34rem);
+      background: white;
+      border-radius: 1.25rem;
+      border: 1px solid var(--sapBorderColor);
+      box-shadow: 0 1rem 3rem rgba(34, 53, 72, 0.14);
+      overflow: hidden;
+    }
+
+    .dialog-header,
+    .dialog-footer {
+      padding: 1rem 1.25rem;
+      background: var(--sapSurfaceAlt);
+      border-bottom: 1px solid var(--sapBorderColor);
+    }
+
+    .dialog-footer {
+      border-bottom: 0;
+      border-top: 1px solid var(--sapBorderColor);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    .dialog-body {
+      padding: 1.25rem;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .dialog h2 {
+      margin: 0 0 0.25rem;
+      font-size: 1.2rem;
+    }
+
+    .dialog p {
+      margin: 0;
+      color: var(--sapTextSecondary);
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    }
+
+    .field {
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    .field label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--sapTextSecondary);
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      border: 1px solid var(--sapBorderColor);
+      background: white;
+      border-radius: 0.875rem;
+      padding: 0.8rem 0.9rem;
+      outline: 0;
+      color: var(--sapTextColor);
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: rgba(0, 112, 242, 0.45);
+      box-shadow: 0 0 0 0.2rem rgba(0, 112, 242, 0.12);
+    }
+
+    .field textarea {
+      min-height: 5.25rem;
+      resize: vertical;
+    }
+
+    .toast {
+      position: fixed;
+      right: 1.5rem;
+      bottom: 1.5rem;
+      z-index: 50;
+      min-width: 18rem;
+      max-width: 28rem;
+      padding: 0.95rem 1rem;
+      border-radius: 1rem;
+      background: #223548;
+      color: white;
+      box-shadow: 0 1rem 2rem rgba(34, 53, 72, 0.24);
+      opacity: 0;
+      transform: translateY(0.5rem);
+      pointer-events: none;
+      transition: 0.2s ease;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast strong {
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    .tour-launch {
+      padding-inline: 0.85rem;
+      width: auto;
+      gap: 0.45rem;
+      border-radius: 999px;
+      border: 1px solid var(--sapBorderColor);
+      background: var(--sapSurfaceAlt);
+      color: var(--sapTextColor);
+      font-weight: 700;
+    }
+
+    .tour-launch:hover {
+      background: var(--sapAccentSoft);
+      border-color: rgba(0, 112, 242, 0.18);
+      color: var(--sapAccentStrong);
+    }
+
+    .tour-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(16, 28, 42, 0.44);
+      z-index: 60;
+      display: none;
+      pointer-events: auto;
+    }
+
+    .tour-overlay.active {
+      display: block;
+    }
+
+    .tour-spotlight {
+      position: fixed;
+      border-radius: 1rem;
+      border: 2px solid rgba(255, 255, 255, 0.95);
+      box-shadow:
+        0 0 0 9999px rgba(16, 28, 42, 0.38),
+        0 0 0 0.35rem rgba(0, 112, 242, 0.14);
+      transition: 0.2s ease;
+      pointer-events: none;
+    }
+
+    .tour-card {
+      position: fixed;
+      width: min(24rem, calc(100vw - 2rem));
+      background: white;
+      border: 1px solid var(--sapBorderColor);
+      border-radius: 1.25rem;
+      box-shadow: 0 1rem 3rem rgba(16, 28, 42, 0.24);
+      overflow: hidden;
+      transition: 0.2s ease;
+    }
+
+    .tour-card-header {
+      padding: 1rem 1.1rem 0.55rem;
+      background: linear-gradient(180deg, #f8fbff, #ffffff);
+      border-bottom: 1px solid rgba(213, 220, 227, 0.7);
+    }
+
+    .tour-step-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--sapAccentStrong);
+      margin-bottom: 0.5rem;
+    }
+
+    .tour-card-header h3 {
+      margin: 0;
+      font-size: 1.08rem;
+      line-height: 1.2;
+    }
+
+    .tour-card-body {
+      padding: 0.95rem 1.1rem 1rem;
+      display: grid;
+      gap: 0.85rem;
+    }
+
+    .tour-card-body p {
+      margin: 0;
+      color: var(--sapTextSecondary);
+    }
+
+    .tour-case-box {
+      border-radius: 1rem;
+      background: var(--sapSurfaceAlt);
+      border: 1px solid var(--sapBorderColor);
+      padding: 0.85rem 0.9rem;
+    }
+
+    .tour-case-box strong {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.84rem;
+      color: var(--sapTextColor);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .tour-progress {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .tour-progress-dot {
+      flex: 1 1 1.4rem;
+      min-width: 1.4rem;
+      height: 0.35rem;
+      border-radius: 999px;
+      background: #d9e2ea;
+    }
+
+    .tour-progress-dot.active {
+      background: var(--sapAccentColor);
+    }
+
+    .tour-card-footer {
+      padding: 0.9rem 1.1rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      border-top: 1px solid rgba(213, 220, 227, 0.7);
+      background: #fcfdff;
+    }
+
+    .tour-card-footer .button {
+      min-height: 2.45rem;
+    }
+
+    .icon {
+      width: 1rem;
+      height: 1rem;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+
+    .icon svg {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+      display: block;
+    }
+
+    @media (max-width: 68rem) {
+      .dashboard-grid,
+      .company-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .note-rail {
+        position: static;
+      }
+
+      .shell-search {
+        display: none;
+      }
+    }
+
+    @media (max-width: 40rem) {
+      .shellbar {
+        padding: 0 var(--sapSpacingM);
+      }
+
+      .app {
+        padding: var(--sapSpacingM);
+      }
+
+      .header-actions,
+      .section-title {
+        width: 100%;
+      }
+
+      .header-actions {
+        justify-content: stretch;
+      }
+
+      .button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="shellbar">
+    <div class="shellbar-inner">
+      <div class="brand-lockup">
+        <div class="brand-mark">NB</div>
+        <div class="brand-copy">
+          <strong>NorthBridge Coverage Workspace</strong>
+          <span>Fresh reconstruction in Morning Horizon spirit</span>
+        </div>
+      </div>
+
+      <label class="shell-search" aria-label="Search workspace">
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.8l-.3-.3A6.5 6.5 0 1 0 14 15.5l.3.3v.8L19 21.3 21.3 19zM5 9.5A4.5 4.5 0 1 1 9.5 14 4.5 4.5 0 0 1 5 9.5z"/></svg>
+        </span>
+        <input value="Search companies, notes, tasks" aria-label="Search" readonly>
+      </label>
+
+      <div class="shell-tools">
+        <button class="tool-button tour-launch" id="start-tour-button" aria-label="Start guided business tour">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 3 1 9l11 6 9-4.91V17h2V9zM5 13.18V17l7 4 7-4v-3.82l-7 3.82z"/></svg></span>
+          <span>Guided Tour</span>
+        </button>
+        <button class="tool-button" aria-label="Notifications">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 22a2.3 2.3 0 0 0 2.3-2.3H9.7A2.3 2.3 0 0 0 12 22zm7-5.3-1.7-1.9V10a5.3 5.3 0 0 0-4-5.1V4a1.3 1.3 0 0 0-2.6 0v.9A5.3 5.3 0 0 0 6.7 10v4.8L5 16.7V18h14z"/></svg></span>
+        </button>
+        <button class="tool-button" aria-label="Help">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M11 18h2v2h-2zm1-16a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-14a4 4 0 0 0-4 4h2a2 2 0 1 1 2.8 1.8A2.2 2.2 0 0 0 11 14v1h2v-.8a4.1 4.1 0 0 0 1.6-.9A4 4 0 0 0 12 6z"/></svg></span>
+        </button>
+        <button class="avatar-button" aria-label="Marcus Velde">
+          <span class="avatar-badge">MV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app">
+    <section class="page active" id="dashboard-page" aria-labelledby="dashboard-title">
+      <div class="dynamic-header">
+        <div class="breadcrumbs">
+          <span>NorthBridge</span>
+          <span>/</span>
+          <span>My Coverage</span>
+          <span>/</span>
+          <span>Daily review</span>
+        </div>
+
+        <div class="header-main">
+          <div class="title-block">
+            <div class="eyebrow">Fresh Direction</div>
+            <h1 class="page-title" id="dashboard-title">Coverage review with a Fiori-style command center</h1>
+            <p class="page-subtitle">
+              This prototype starts fresh from the critical path: detect a signal, open company context, read the note, capture follow-up, and confirm the workflow updated.
+            </p>
+          </div>
+
+          <div class="header-actions">
+            <button class="button secondary" id="preview-task-button">Preview follow-up task</button>
+            <button class="button primary" id="hero-open-button">Open highlighted company</button>
+          </div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-value" id="kpi-coverage-count">4</div>
+            <div class="kpi-label">In-scope companies</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value" id="kpi-open-actions">3</div>
+            <div class="kpi-label">Open follow-ups</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value" id="kpi-notes-today">2</div>
+            <div class="kpi-label">Fresh notes today</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value" id="kpi-due-window">48h</div>
+            <div class="kpi-label">Next committee window</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-strip">
+        <div class="flow-step active">1. Coverage signal</div>
+        <div class="flow-step">2. Company context</div>
+        <div class="flow-step">3. Note insight</div>
+        <div class="flow-step">4. Follow-up task</div>
+        <div class="flow-step">5. Confirmation</div>
+      </div>
+
+      <div class="message-strip hidden" id="dashboard-message">
+        <div>
+          <div class="message-title">Follow-up captured</div>
+          <div id="dashboard-message-copy">Your new task is now visible in My Actions and linked to the Verdant Systems note.</div>
+        </div>
+        <button class="button secondary" id="review-company-button">Review company again</button>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="stack">
+          <article class="card hero-card" id="tour-dashboard-hero">
+            <div class="card-body">
+              <div class="status-rail">
+                <span class="status-dot"></span>
+                Priority signal in current coverage
+              </div>
+              <h2 class="hero-title">Verdant Systems needs one legal-diligence follow-up before the committee deck is ready.</h2>
+              <p class="hero-copy">
+                A fresh management note landed this morning. The note is rich enough to drive the next action: capture the diligence question, assign ownership, and reflect it back into the working queue.
+              </p>
+
+              <div class="hero-detail-grid">
+                <div class="detail-chip">
+                  <span class="label">Company</span>
+                  <span class="value">Verdant Systems</span>
+                </div>
+                <div class="detail-chip">
+                  <span class="label">Stage</span>
+                  <span class="value">Diligence</span>
+                </div>
+                <div class="detail-chip">
+                  <span class="label">Latest note</span>
+                  <span class="value">Q1 IC Prep Meeting</span>
+                </div>
+                <div class="detail-chip">
+                  <span class="label">Decision window</span>
+                  <span class="value">Apr 15 committee review</span>
+                </div>
+              </div>
+
+              <div style="margin-top: 1.25rem;">
+                <button class="button primary" id="hero-card-button">Open company workspace</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Coverage signals</h3>
+                <div class="card-subtitle">Signals are phrased as decision-ready work, not raw events.</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="signal-list" id="signal-list" data-tour-target="signals"></div>
+            </div>
+          </article>
+        </div>
+
+        <div class="stack">
+          <article class="card" id="tour-dashboard-actions">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">My actions</h3>
+                <div class="card-subtitle">Open tasks stay visible from the moment they are created.</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="task-list" id="dashboard-task-list"></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Recent activity</h3>
+                <div class="card-subtitle">The feed should explain why the dashboard matters.</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="signal-list" id="activity-feed"></div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="company-page" aria-labelledby="company-title">
+      <div class="dynamic-header" id="tour-company-header">
+        <div class="breadcrumbs">
+          <button type="button" id="back-to-dashboard">NorthBridge</button>
+          <span>/</span>
+          <span>My Coverage</span>
+          <span>/</span>
+          <span id="company-breadcrumb">Verdant Systems</span>
+        </div>
+
+        <div class="header-main">
+          <div class="title-block">
+            <div class="eyebrow">Object Page</div>
+            <h1 class="page-title" id="company-title">Verdant Systems</h1>
+            <p class="page-subtitle" id="company-subtitle">
+              Technology platform in diligence. The object page keeps the current opportunity, note context, and next step in one place.
+            </p>
+          </div>
+
+          <div class="header-actions">
+            <button class="button secondary" id="return-dashboard-secondary">Back to coverage</button>
+            <button class="button primary" id="company-create-task-button">Create follow-up task</button>
+          </div>
+        </div>
+
+        <div class="kpi-row" id="company-kpis"></div>
+      </div>
+
+      <div class="flow-strip">
+        <div class="flow-step">1. Coverage signal</div>
+        <div class="flow-step active">2. Company context</div>
+        <div class="flow-step active">3. Note insight</div>
+        <div class="flow-step" id="task-flow-step">4. Follow-up task</div>
+        <div class="flow-step" id="confirm-flow-step">5. Confirmation</div>
+      </div>
+
+      <div class="anchor-bar">
+        <button class="anchor-link active">Overview</button>
+        <button class="anchor-link active">Notes</button>
+        <button class="anchor-link">Activities</button>
+        <button class="anchor-link">Tasks</button>
+        <button class="anchor-link">Contacts</button>
+      </div>
+
+      <div class="company-layout">
+        <aside class="card note-rail">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Recent notes</h3>
+              <div class="card-subtitle">Select the note that will drive the next step.</div>
+            </div>
+          </div>
+          <div class="card-body" id="note-list"></div>
+        </aside>
+
+        <div class="object-grid">
+          <article class="card">
+            <div class="card-body">
+              <div class="section-title">
+                <div>
+                  <h3>At-a-glance context</h3>
+                  <p>Object page header plus compact overview cards match the Fiori pattern of context before detail.</p>
+                </div>
+              </div>
+              <div class="mini-grid" id="overview-cards"></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-body">
+              <div class="section-title">
+                <div>
+                  <h3 id="note-workspace-title">Q1 IC Prep Meeting</h3>
+                  <p id="note-workspace-subtitle">Notes are structured for action, not stored as undifferentiated text.</p>
+                </div>
+                <button class="button secondary" id="inline-task-button">Create follow-up task</button>
+              </div>
+
+              <div class="tabbar" id="note-tabs" data-tour-target="note-tabs">
+                <button class="tab" data-tab="info">Info</button>
+                <button class="tab active" data-tab="summary">Summary</button>
+                <button class="tab" data-tab="details">Details</button>
+                <button class="tab" data-tab="fundInterest">Fund Interest</button>
+                <button class="tab" data-tab="tasks">Tasks</button>
+              </div>
+
+              <div class="tab-panel" data-panel="info"></div>
+              <div class="tab-panel active" data-panel="summary"></div>
+              <div class="tab-panel" data-panel="details"></div>
+              <div class="tab-panel" data-panel="fundInterest"></div>
+              <div class="tab-panel" data-panel="tasks"></div>
+
+              <div class="confirmation-strip" id="company-confirmation">
+                The follow-up task has been created in-context and linked back to this note. Return to coverage to see it in the dashboard queue.
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="dialog-backdrop" id="task-dialog" aria-hidden="true">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="task-dialog-title">
+      <div class="dialog-header">
+        <h2 id="task-dialog-title">Create follow-up task</h2>
+        <p>Capture the next action while the note context is still visible and fresh.</p>
+      </div>
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label for="task-title">Title</label>
+            <input id="task-title" value="Prepare legal diligence questions for Verdant IC deck">
+          </div>
+          <div class="field">
+            <label for="task-owner">Owner</label>
+            <select id="task-owner">
+              <option>Marcus Velde</option>
+              <option>Sarah Chen</option>
+              <option>James Okafor</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="task-priority">Priority</label>
+            <select id="task-priority">
+              <option>High</option>
+              <option>Medium</option>
+              <option>Low</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="task-due">Due date</label>
+            <input id="task-due" type="date" value="2026-04-15">
+          </div>
+          <div class="field">
+            <label for="task-status">Status</label>
+            <select id="task-status">
+              <option>Open</option>
+              <option>In Progress</option>
+              <option>Blocked</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="task-description">Description</label>
+            <textarea id="task-description">Capture legal diligence gaps mentioned in the management meeting and convert them into the IC appendix.</textarea>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="button secondary" id="cancel-task-dialog">Cancel</button>
+        <button class="button primary" id="save-task-dialog">Save task</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" aria-live="polite"></div>
+  <div class="tour-overlay" id="tour-overlay" aria-hidden="true">
+    <div class="tour-spotlight" id="tour-spotlight"></div>
+    <div class="tour-card" id="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title">
+      <div class="tour-card-header">
+        <div class="tour-step-label" id="tour-step-label">Guided review</div>
+        <h3 id="tour-title">Business case</h3>
+      </div>
+      <div class="tour-card-body">
+        <p id="tour-description"></p>
+        <div class="tour-case-box">
+          <strong>Why this matters</strong>
+          <p id="tour-business-case"></p>
+        </div>
+        <div class="tour-progress" id="tour-progress"></div>
+      </div>
+      <div class="tour-card-footer">
+        <div style="display:flex;gap:0.75rem;">
+          <button class="button secondary" id="tour-skip-button">Skip tour</button>
+          <button class="button secondary" id="tour-back-button">Back</button>
+        </div>
+        <button class="button primary" id="tour-next-button">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const model = {
+      currentUser: {
+        name: "Marcus Velde",
+        role: "VP, Technology Buyouts"
+      },
+      companies: [
+        {
+          id: "verdant",
+          name: "Verdant Systems",
+          subtitle: "Technology platform in diligence",
+          stage: "Diligence",
+          status: "Committee prep",
+          ownership: "15%",
+          revenue: "$420M",
+          ebitda: "$68M",
+          lastTouch: "Today",
+          committeeDate: "Apr 15"
+        },
+        {
+          id: "luminos",
+          name: "Luminos Holdings",
+          subtitle: "Healthcare services, investor committee next",
+          stage: "IC Approval",
+          status: "Ready",
+          ownership: "25%",
+          revenue: "$185M",
+          ebitda: "$31M",
+          lastTouch: "Today",
+          committeeDate: "Apr 16"
+        },
+        {
+          id: "crestfield",
+          name: "Crestfield Logistics",
+          subtitle: "Industrials platform, operating review pending",
+          stage: "Term Sheet",
+          status: "Monitoring",
+          ownership: "12%",
+          revenue: "$740M",
+          ebitda: "$95M",
+          lastTouch: "2 days ago",
+          committeeDate: "Apr 22"
+        }
+      ],
+      signals: [
+        {
+          id: "signal-verdant",
+          companyId: "verdant",
+          title: "Verdant Systems note needs one legal follow-up before committee review.",
+          summary: "Management note surfaced diligence gaps that are not yet captured as an owned task.",
+          urgency: "Critical",
+          date: "Today",
+          badge: "IC prep"
+        },
+        {
+          id: "signal-luminos",
+          companyId: "luminos",
+          title: "Luminos IC package is ready for partner review.",
+          summary: "No open blockers, but the committee narrative still needs final packaging.",
+          urgency: "Ready",
+          date: "Today",
+          badge: "IC approval"
+        },
+        {
+          id: "signal-crestfield",
+          companyId: "crestfield",
+          title: "Crestfield site visit must be scheduled this week.",
+          summary: "Operations review is the next gating event for the term-sheet discussion.",
+          urgency: "Medium",
+          date: "2 days ago",
+          badge: "operations"
+        }
+      ],
+      activities: [
+        {
+          id: "act-01",
+          companyId: "verdant",
+          title: "Q1 IC prep meeting note captured",
+          summary: "Management confidence is strong, but the legal diligence appendix needs expansion before committee review.",
+          when: "Today · 9:20 AM"
+        },
+        {
+          id: "act-02",
+          companyId: "luminos",
+          title: "CEO introduction call completed",
+          summary: "Healthcare platform story is solid and ready for investor committee packaging.",
+          when: "Today · 8:10 AM"
+        },
+        {
+          id: "act-03",
+          companyId: "crestfield",
+          title: "Regulatory submission reviewed",
+          summary: "No major blockers, but site visit timing will affect next stage confidence.",
+          when: "Yesterday · 4:45 PM"
+        }
+      ],
+      tasks: [
+        {
+          id: "task-01",
+          companyId: "verdant",
+          title: "Review Verdant Q1 financial package",
+          owner: "Marcus Velde",
+          due: "Apr 12",
+          status: "In Progress",
+          priority: "High",
+          noteId: "note-verdant-01"
+        },
+        {
+          id: "task-02",
+          companyId: "luminos",
+          title: "Finalize Luminos IC slide narrative",
+          owner: "Marcus Velde",
+          due: "Apr 13",
+          status: "Open",
+          priority: "High",
+          noteId: "note-luminos-01"
+        },
+        {
+          id: "task-03",
+          companyId: "crestfield",
+          title: "Schedule Crestfield site visit",
+          owner: "Sarah Chen",
+          due: "Apr 18",
+          status: "Open",
+          priority: "Medium",
+          noteId: "note-crestfield-01"
+        }
+      ],
+      notes: [
+        {
+          id: "note-verdant-01",
+          companyId: "verdant",
+          title: "Q1 IC Prep Meeting",
+          type: "Management meeting",
+          author: "Marcus Velde",
+          date: "Today",
+          participants: "Sarah Chen, James Okafor, Verdant CFO",
+          summary: [
+            "Management reaffirmed revenue confidence and expects no material drift on the operating plan.",
+            "The open issue is not the business story itself, but whether the current legal diligence appendix is complete enough for committee review.",
+            "The right next step is a targeted follow-up task, not another generic note."
+          ],
+          details: [
+            "Counsel flagged two customer-contract exceptions that need tighter framing in the committee appendix.",
+            "The team agreed this should be owned by one person with a due date before the deck freeze.",
+            "No additional management meetings are needed unless the appendix reveals a structural issue."
+          ],
+          fundInterest: [
+            "Growth Fund IV remains the likely lead vehicle.",
+            "Co-invest appetite exists, but only after legal diligence is normalized.",
+            "The committee will expect a concise explanation of downside containment."
+          ],
+          linkedTasks: ["task-01"]
+        },
+        {
+          id: "note-verdant-02",
+          companyId: "verdant",
+          title: "Customer Call Debrief",
+          type: "Customer diligence",
+          author: "Sarah Chen",
+          date: "Yesterday",
+          participants: "Marcus Velde, Sarah Chen, customer CFO",
+          summary: [
+            "Reference customer remains positive on implementation quality and roadmap delivery."
+          ],
+          details: [
+            "No additional commercial diligence required before committee review."
+          ],
+          fundInterest: [
+            "Supportive for Growth Fund IV underwriting case."
+          ],
+          linkedTasks: []
+        }
+      ]
+    };
+
+    const state = {
+      activePage: "dashboard",
+      selectedCompanyId: "verdant",
+      selectedNoteId: "note-verdant-01",
+      activeTab: "summary",
+      confirmationVisible: false
+    };
+
+    const originalArtifacts = {
+      tasks: JSON.parse(JSON.stringify(model.tasks)),
+      activities: JSON.parse(JSON.stringify(model.activities)),
+      notes: JSON.parse(JSON.stringify(model.notes))
+    };
+
+    const refs = {
+      dashboardPage: document.getElementById("dashboard-page"),
+      companyPage: document.getElementById("company-page"),
+      signalList: document.getElementById("signal-list"),
+      dashboardTaskList: document.getElementById("dashboard-task-list"),
+      activityFeed: document.getElementById("activity-feed"),
+      companyBreadcrumb: document.getElementById("company-breadcrumb"),
+      companyTitle: document.getElementById("company-title"),
+      companySubtitle: document.getElementById("company-subtitle"),
+      companyKpis: document.getElementById("company-kpis"),
+      noteList: document.getElementById("note-list"),
+      overviewCards: document.getElementById("overview-cards"),
+      noteWorkspaceTitle: document.getElementById("note-workspace-title"),
+      noteWorkspaceSubtitle: document.getElementById("note-workspace-subtitle"),
+      noteTabs: document.getElementById("note-tabs"),
+      tabPanels: Array.from(document.querySelectorAll(".tab-panel")),
+      companyConfirmation: document.getElementById("company-confirmation"),
+      dashboardMessage: document.getElementById("dashboard-message"),
+      dashboardMessageCopy: document.getElementById("dashboard-message-copy"),
+      taskDialog: document.getElementById("task-dialog"),
+      toast: document.getElementById("toast"),
+      taskFlowStep: document.getElementById("task-flow-step"),
+      confirmFlowStep: document.getElementById("confirm-flow-step"),
+      startTourButton: document.getElementById("start-tour-button"),
+      tourOverlay: document.getElementById("tour-overlay"),
+      tourSpotlight: document.getElementById("tour-spotlight"),
+      tourCard: document.getElementById("tour-card"),
+      tourStepLabel: document.getElementById("tour-step-label"),
+      tourTitle: document.getElementById("tour-title"),
+      tourDescription: document.getElementById("tour-description"),
+      tourBusinessCase: document.getElementById("tour-business-case"),
+      tourProgress: document.getElementById("tour-progress"),
+      tourBackButton: document.getElementById("tour-back-button"),
+      tourNextButton: document.getElementById("tour-next-button"),
+      tourSkipButton: document.getElementById("tour-skip-button")
+    };
+
+    const tour = {
+      active: false,
+      stepIndex: 0,
+      steps: [
+        {
+          label: "Step 1 of 6",
+          title: "Start with a decision-ready coverage signal",
+          description: "The landing state is not a decorative dashboard. It opens on one compressed decision surface that tells the user what needs attention right now.",
+          businessCase: "Private-equity teams need triage first. The business value of the homepage is fast prioritization across current coverage, not browsing for its own sake.",
+          target: "#tour-dashboard-hero",
+          beforeEnter() {
+            goToDashboard();
+            state.confirmationVisible = false;
+            refs.dashboardMessage.classList.add("hidden");
+          }
+        },
+        {
+          label: "Step 2 of 6",
+          title: "Translate raw events into actionable signals",
+          description: "Coverage signals reframe activity into business language: what is blocked, what is ready, and what needs ownership before the next decision gate.",
+          businessCase: "Enterprise users rarely want a raw event feed. They want the system to compress noise into work that can be acted on under time pressure.",
+          target: "#signal-list",
+          beforeEnter() {
+            goToDashboard();
+          }
+        },
+        {
+          label: "Step 3 of 6",
+          title: "Anchor the workflow on an object page",
+          description: "The company page acts like a Fiori object page: header context first, then structured sections that keep the opportunity, state, and next decision in one place.",
+          businessCase: "The business case here is context retention. Users should not lose the deal narrative when moving from signal to detail.",
+          target: "#tour-company-header",
+          beforeEnter() {
+            openCompany("verdant");
+          }
+        },
+        {
+          label: "Step 4 of 6",
+          title: "Use structured notes as working evidence",
+          description: "The note surface separates summary, details, fund interest, and linked tasks. That keeps different kinds of reasoning distinct while preserving one source of truth.",
+          businessCase: "This supports enterprise traceability. A meeting note is not just storage; it is the evidence base for underwriting, diligence, and committee prep.",
+          target: "#note-tabs",
+          beforeEnter() {
+            openCompany("verdant");
+            state.activeTab = "summary";
+            renderCompanyPage();
+          }
+        },
+        {
+          label: "Step 5 of 6",
+          title: "Capture follow-up in context",
+          description: "The task action lives next to the note because the next step should be created while the evidence is still in view, with owner, priority, and due date already framed.",
+          businessCase: "This reduces handoff loss. Business value comes from turning insight into accountable action without forcing the user into a separate module.",
+          target: ".dialog",
+          beforeEnter() {
+            openCompany("verdant");
+            state.activeTab = "tasks";
+            renderCompanyPage();
+            openTaskDialog();
+          }
+        },
+        {
+          label: "Step 6 of 6",
+          title: "Close the loop back in the working queue",
+          description: "After the task is created, the dashboard immediately reflects the change. The prototype shows that the system remembers the action and surfaces it where the user works next.",
+          businessCase: "This is the core business case of the prototype: notice, interpret, act, and confirm. Without this loop, the product is just a viewer.",
+          target: "#tour-dashboard-actions",
+          nextLabel: "Finish",
+          beforeEnter() {
+            ensureTourTaskCreated();
+            goToDashboard();
+          }
+        }
+      ]
+    };
+
+    function getCompany(companyId) {
+      return model.companies.find((company) => company.id === companyId);
+    }
+
+    function getSelectedCompany() {
+      return getCompany(state.selectedCompanyId);
+    }
+
+    function getSelectedNote() {
+      return model.notes.find((note) => note.id === state.selectedNoteId);
+    }
+
+    function taskPriorityClass(priority) {
+      return priority === "High" ? "critical" : priority === "Medium" ? "accent" : "positive";
+    }
+
+    function renderDashboard() {
+      refs.signalList.innerHTML = model.signals.map((signal) => {
+        const urgencyClass = signal.urgency === "Critical" ? "critical" : signal.urgency === "Ready" ? "positive" : "accent";
+        const company = getCompany(signal.companyId);
+        return `
+          <button class="signal-row" data-open-company="${signal.companyId}">
+            <div class="row-title">${signal.title}</div>
+            <div class="row-meta">
+              <span class="pill ${urgencyClass}">${signal.urgency}</span>
+              <span>${company.name}</span>
+              <span>${signal.badge}</span>
+              <span>${signal.date}</span>
+            </div>
+            <p style="margin:0.65rem 0 0;color:var(--sapTextSecondary);font-size:0.9rem;">${signal.summary}</p>
+          </button>
+        `;
+      }).join("");
+
+      const dashboardTasks = model.tasks
+        .slice()
+        .sort((left, right) => {
+          const weights = { High: 0, Medium: 1, Low: 2 };
+          return weights[left.priority] - weights[right.priority];
+        })
+        .map((task) => {
+          const company = getCompany(task.companyId);
+          return `
+            <div class="task-row">
+              <div>
+                <h4>${task.title}</h4>
+                <p>${company.name} · ${task.owner} · due ${task.due}</p>
+              </div>
+              <span class="pill ${taskPriorityClass(task.priority)}">${task.priority}</span>
+            </div>
+          `;
+        }).join("");
+
+      refs.dashboardTaskList.innerHTML = dashboardTasks;
+
+      refs.activityFeed.innerHTML = model.activities.map((activity) => {
+        const company = getCompany(activity.companyId);
+        return `
+          <div class="signal-row" data-open-company="${activity.companyId}">
+            <div class="row-title">${activity.title}</div>
+            <div class="row-meta">
+              <span class="pill accent">${company.name}</span>
+              <span>${activity.when}</span>
+            </div>
+            <p style="margin:0.65rem 0 0;color:var(--sapTextSecondary);font-size:0.9rem;">${activity.summary}</p>
+          </div>
+        `;
+      }).join("");
+
+      document.getElementById("kpi-open-actions").textContent = String(model.tasks.length);
+      document.getElementById("kpi-notes-today").textContent = String(model.notes.filter((note) => note.date === "Today").length);
+    }
+
+    function renderCompanyHeader() {
+      const company = getSelectedCompany();
+      refs.companyBreadcrumb.textContent = company.name;
+      refs.companyTitle.textContent = company.name;
+      refs.companySubtitle.textContent = `${company.subtitle}. The object page keeps the opportunity, note context, and next action in one place.`;
+      refs.companyKpis.innerHTML = `
+        <div class="kpi-card">
+          <div class="kpi-value">${company.revenue}</div>
+          <div class="kpi-label">Revenue</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value">${company.ebitda}</div>
+          <div class="kpi-label">EBITDA</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value">${company.ownership}</div>
+          <div class="kpi-label">Ownership</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value">${company.committeeDate}</div>
+          <div class="kpi-label">Committee date</div>
+        </div>
+      `;
+    }
+
+    function renderNoteRail() {
+      const companyNotes = model.notes.filter((note) => note.companyId === state.selectedCompanyId);
+      refs.noteList.innerHTML = companyNotes.map((note) => `
+        <button class="note-list-button ${note.id === state.selectedNoteId ? "active" : ""}" data-note-id="${note.id}">
+          <div class="row-title">${note.title}</div>
+          <div class="row-meta">
+            <span class="pill accent">${note.type}</span>
+            <span>${note.date}</span>
+          </div>
+          <p style="margin:0.65rem 0 0;color:var(--sapTextSecondary);font-size:0.88rem;">${note.summary[0]}</p>
+        </button>
+      `).join("");
+    }
+
+    function renderOverviewCards() {
+      const company = getSelectedCompany();
+      refs.overviewCards.innerHTML = `
+        <div class="mini-card">
+          <h4>Stage</h4>
+          <p>${company.stage}</p>
+        </div>
+        <div class="mini-card">
+          <h4>Current status</h4>
+          <p>${company.status}</p>
+        </div>
+        <div class="mini-card">
+          <h4>Last touch</h4>
+          <p>${company.lastTouch}</p>
+        </div>
+        <div class="mini-card">
+          <h4>Required outcome</h4>
+          <p>Turn note insight into committee-ready action</p>
+        </div>
+      `;
+    }
+
+    function renderNoteWorkspace() {
+      const note = getSelectedNote();
+      const company = getSelectedCompany();
+
+      refs.noteWorkspaceTitle.textContent = note.title;
+      refs.noteWorkspaceSubtitle.textContent = `${company.name} · ${note.type} · ${note.author} · ${note.date}`;
+
+      Array.from(refs.noteTabs.querySelectorAll(".tab")).forEach((tab) => {
+        tab.classList.toggle("active", tab.dataset.tab === state.activeTab);
+      });
+
+      refs.tabPanels.forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.panel === state.activeTab);
+      });
+
+      const infoPanel = document.querySelector('[data-panel="info"]');
+      const summaryPanel = document.querySelector('[data-panel="summary"]');
+      const detailsPanel = document.querySelector('[data-panel="details"]');
+      const fundPanel = document.querySelector('[data-panel="fundInterest"]');
+      const tasksPanel = document.querySelector('[data-panel="tasks"]');
+
+      infoPanel.innerHTML = `
+        <div class="split-fields">
+          <div class="field-block">
+            <span class="key">Type</span>
+            <span class="value">${note.type}</span>
+          </div>
+          <div class="field-block">
+            <span class="key">Author</span>
+            <span class="value">${note.author}</span>
+          </div>
+          <div class="field-block">
+            <span class="key">Date</span>
+            <span class="value">${note.date}</span>
+          </div>
+          <div class="field-block">
+            <span class="key">Participants</span>
+            <span class="value">${note.participants}</span>
+          </div>
+        </div>
+      `;
+
+      summaryPanel.innerHTML = `
+        <div class="rich-copy">
+          ${note.summary.map((paragraph) => `<p>${paragraph}</p>`).join("")}
+        </div>
+      `;
+
+      detailsPanel.innerHTML = `
+        <div class="rich-copy">
+          ${note.details.map((paragraph) => `<p>${paragraph}</p>`).join("")}
+        </div>
+      `;
+
+      fundPanel.innerHTML = `
+        <div class="fund-list">
+          ${note.fundInterest.map((item) => `
+            <div class="fund-row">
+              <h4>${item}</h4>
+            </div>
+          `).join("")}
+        </div>
+      `;
+
+      const linkedTasks = note.linkedTasks
+        .map((taskId) => model.tasks.find((task) => task.id === taskId))
+        .filter(Boolean);
+
+      tasksPanel.innerHTML = `
+        <div class="task-link-list">
+          ${linkedTasks.map((task) => `
+            <div class="task-row">
+              <div>
+                <h4>${task.title}</h4>
+                <p>${task.owner} · due ${task.due} · ${task.status}</p>
+              </div>
+              <span class="pill ${taskPriorityClass(task.priority)}">${task.priority}</span>
+            </div>
+          `).join("")}
+        </div>
+        <div style="margin-top:1rem;">
+          <button class="button primary" id="task-tab-button">Create linked follow-up</button>
+        </div>
+      `;
+
+      const taskTabButton = document.getElementById("task-tab-button");
+      if (taskTabButton) {
+        taskTabButton.addEventListener("click", openTaskDialog);
+      }
+    }
+
+    function renderCompanyPage() {
+      renderCompanyHeader();
+      renderNoteRail();
+      renderOverviewCards();
+      renderNoteWorkspace();
+      refs.companyConfirmation.classList.toggle("visible", state.confirmationVisible);
+      refs.taskFlowStep.classList.toggle("active", state.confirmationVisible);
+      refs.confirmFlowStep.classList.toggle("active", state.confirmationVisible);
+    }
+
+    function openCompany(companyId) {
+      state.selectedCompanyId = companyId;
+      const firstNote = model.notes.find((note) => note.companyId === companyId);
+      state.selectedNoteId = firstNote ? firstNote.id : state.selectedNoteId;
+      state.activeTab = "summary";
+      state.activePage = "company";
+      refs.dashboardPage.classList.remove("active");
+      refs.companyPage.classList.add("active");
+      renderCompanyPage();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function goToDashboard() {
+      state.activePage = "dashboard";
+      refs.companyPage.classList.remove("active");
+      refs.dashboardPage.classList.add("active");
+      renderDashboard();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function openTaskDialog() {
+      refs.taskDialog.classList.add("open");
+      refs.taskDialog.setAttribute("aria-hidden", "false");
+      document.getElementById("task-title").focus();
+    }
+
+    function closeTaskDialog() {
+      refs.taskDialog.classList.remove("open");
+      refs.taskDialog.setAttribute("aria-hidden", "true");
+    }
+
+    function resetTourArtifacts() {
+      model.tasks = JSON.parse(JSON.stringify(originalArtifacts.tasks));
+      model.activities = JSON.parse(JSON.stringify(originalArtifacts.activities));
+      model.notes = JSON.parse(JSON.stringify(originalArtifacts.notes));
+      state.confirmationVisible = false;
+      refs.dashboardMessage.classList.add("hidden");
+      closeTaskDialog();
+    }
+
+    function ensureTourTaskCreated() {
+      const existing = model.tasks.find((task) => task.id === "task-tour");
+      if (existing) {
+        state.confirmationVisible = true;
+        refs.dashboardMessage.classList.remove("hidden");
+        return;
+      }
+
+      const selectedNote = model.notes.find((note) => note.id === "note-verdant-01");
+      model.tasks.unshift({
+        id: "task-tour",
+        companyId: "verdant",
+        title: "Prepare legal diligence questions for Verdant IC deck",
+        owner: "Marcus Velde",
+        due: "Apr 15",
+        status: "Open",
+        priority: "High",
+        description: "Capture legal diligence gaps mentioned in the management meeting and convert them into the IC appendix.",
+        noteId: "note-verdant-01"
+      });
+
+      selectedNote.linkedTasks.unshift("task-tour");
+      model.activities.unshift({
+        id: "act-tour",
+        companyId: "verdant",
+        title: "Follow-up task created: legal diligence appendix",
+        summary: "The next diligence action is now assigned and visible in the working queue before committee review.",
+        when: "Just now"
+      });
+
+      state.confirmationVisible = true;
+      refs.dashboardMessage.classList.remove("hidden");
+      refs.dashboardMessageCopy.textContent = "Prepare legal diligence questions for Verdant IC deck is now visible in My Actions and linked to the Verdant Systems note.";
+      closeTaskDialog();
+      renderCompanyPage();
+      renderDashboard();
+    }
+
+    function showToast(title, message) {
+      refs.toast.innerHTML = `<strong>${title}</strong>${message}`;
+      refs.toast.classList.add("visible");
+      window.setTimeout(() => {
+        refs.toast.classList.remove("visible");
+      }, 3200);
+    }
+
+    function saveTask() {
+      const title = document.getElementById("task-title").value.trim();
+      const owner = document.getElementById("task-owner").value;
+      const priority = document.getElementById("task-priority").value;
+      const dueRaw = document.getElementById("task-due").value;
+      const status = document.getElementById("task-status").value;
+      const description = document.getElementById("task-description").value.trim();
+
+      if (!title || !dueRaw) {
+        showToast("Task not created", "Both title and due date are required.");
+        return;
+      }
+
+      const newTaskId = `task-${String(model.tasks.length + 1).padStart(2, "0")}`;
+      const formattedDue = new Date(`${dueRaw}T00:00:00`).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric"
+      });
+      const selectedNote = getSelectedNote();
+      const selectedCompany = getSelectedCompany();
+
+      model.tasks.unshift({
+        id: newTaskId,
+        companyId: selectedCompany.id,
+        title,
+        owner,
+        due: formattedDue,
+        status,
+        priority,
+        description,
+        noteId: selectedNote.id
+      });
+
+      selectedNote.linkedTasks.unshift(newTaskId);
+
+      model.activities.unshift({
+        id: `act-${String(model.activities.length + 1).padStart(2, "0")}`,
+        companyId: selectedCompany.id,
+        title: `Follow-up task created: ${title}`,
+        summary: `${owner} now owns the next diligence action captured directly from the meeting note.`,
+        when: "Just now"
+      });
+
+      state.activeTab = "tasks";
+      state.confirmationVisible = true;
+      refs.dashboardMessage.classList.remove("hidden");
+      refs.dashboardMessageCopy.textContent = `${title} was created for ${selectedCompany.name} and is now visible in My Actions.`;
+
+      closeTaskDialog();
+      renderDashboard();
+      renderCompanyPage();
+      showToast("Task created", "The follow-up now appears in the note, the dashboard queue, and recent activity.");
+    }
+
+    function buildTourProgress() {
+      refs.tourProgress.innerHTML = tour.steps.map((step, index) => `
+        <span class="tour-progress-dot ${index === tour.stepIndex ? "active" : ""}"></span>
+      `).join("");
+    }
+
+    function positionTour(target) {
+      const rect = target.getBoundingClientRect();
+      const spotlightPadding = 10;
+      refs.tourSpotlight.style.top = `${Math.max(8, rect.top - spotlightPadding)}px`;
+      refs.tourSpotlight.style.left = `${Math.max(8, rect.left - spotlightPadding)}px`;
+      refs.tourSpotlight.style.width = `${Math.min(window.innerWidth - 16, rect.width + spotlightPadding * 2)}px`;
+      refs.tourSpotlight.style.height = `${Math.min(window.innerHeight - 16, rect.height + spotlightPadding * 2)}px`;
+
+      const cardRect = refs.tourCard.getBoundingClientRect();
+      const fitsBelow = rect.bottom + 24 + cardRect.height < window.innerHeight - 16;
+      const top = fitsBelow
+        ? rect.bottom + 18
+        : Math.max(16, rect.top - cardRect.height - 18);
+      const left = Math.min(
+        window.innerWidth - cardRect.width - 16,
+        Math.max(16, rect.left)
+      );
+
+      refs.tourCard.style.top = `${top}px`;
+      refs.tourCard.style.left = `${left}px`;
+    }
+
+    function showTourStep() {
+      const step = tour.steps[tour.stepIndex];
+      step.beforeEnter();
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const target = document.querySelector(step.target);
+          if (!target) {
+            return;
+          }
+
+          target.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
+          refs.tourStepLabel.textContent = step.label;
+          refs.tourTitle.textContent = step.title;
+          refs.tourDescription.textContent = step.description;
+          refs.tourBusinessCase.textContent = step.businessCase;
+          refs.tourBackButton.disabled = tour.stepIndex === 0;
+          refs.tourNextButton.textContent = step.nextLabel || "Next";
+          buildTourProgress();
+          positionTour(target);
+          window.setTimeout(() => positionTour(target), 80);
+          window.setTimeout(() => positionTour(target), 180);
+        });
+      });
+    }
+
+    function startTour() {
+      resetTourArtifacts();
+      tour.active = true;
+      tour.stepIndex = 0;
+      refs.tourOverlay.classList.add("active");
+      refs.tourOverlay.setAttribute("aria-hidden", "false");
+      showTourStep();
+    }
+
+    function stopTour() {
+      tour.active = false;
+      refs.tourOverlay.classList.remove("active");
+      refs.tourOverlay.setAttribute("aria-hidden", "true");
+    }
+
+    function nextTourStep() {
+      if (tour.stepIndex >= tour.steps.length - 1) {
+        stopTour();
+        showToast("Guided tour complete", "The prototype showed the business case from signal detection through workflow confirmation.");
+        return;
+      }
+
+      tour.stepIndex += 1;
+      showTourStep();
+    }
+
+    function previousTourStep() {
+      if (tour.stepIndex === 0) {
+        return;
+      }
+
+      tour.stepIndex -= 1;
+      showTourStep();
+    }
+
+    function bindStaticEvents() {
+      refs.startTourButton.addEventListener("click", startTour);
+      document.getElementById("hero-open-button").addEventListener("click", () => openCompany("verdant"));
+      document.getElementById("hero-card-button").addEventListener("click", () => openCompany("verdant"));
+      document.getElementById("review-company-button").addEventListener("click", () => openCompany(state.selectedCompanyId));
+      document.getElementById("preview-task-button").addEventListener("click", openTaskDialog);
+      document.getElementById("company-create-task-button").addEventListener("click", openTaskDialog);
+      document.getElementById("inline-task-button").addEventListener("click", openTaskDialog);
+      document.getElementById("back-to-dashboard").addEventListener("click", goToDashboard);
+      document.getElementById("return-dashboard-secondary").addEventListener("click", goToDashboard);
+      document.getElementById("cancel-task-dialog").addEventListener("click", closeTaskDialog);
+      document.getElementById("save-task-dialog").addEventListener("click", saveTask);
+
+      refs.taskDialog.addEventListener("click", (event) => {
+        if (event.target === refs.taskDialog) {
+          closeTaskDialog();
+        }
+      });
+
+      refs.tourNextButton.addEventListener("click", nextTourStep);
+      refs.tourBackButton.addEventListener("click", previousTourStep);
+      refs.tourSkipButton.addEventListener("click", stopTour);
+
+      window.addEventListener("resize", () => {
+        if (tour.active) {
+          showTourStep();
+        }
+      });
+
+      refs.noteTabs.addEventListener("click", (event) => {
+        const tab = event.target.closest(".tab");
+        if (!tab) {
+          return;
+        }
+        state.activeTab = tab.dataset.tab;
+        renderNoteWorkspace();
+      });
+
+      document.body.addEventListener("click", (event) => {
+        const companyTrigger = event.target.closest("[data-open-company]");
+        if (companyTrigger) {
+          openCompany(companyTrigger.dataset.openCompany);
+        }
+
+        const noteTrigger = event.target.closest("[data-note-id]");
+        if (noteTrigger) {
+          state.selectedNoteId = noteTrigger.dataset.noteId;
+          state.activeTab = "summary";
+          renderCompanyPage();
+        }
+      });
+    }
+
+    function getDocumentHeight() {
+      return Math.max(
+        document.body.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.scrollHeight,
+        document.documentElement.offsetHeight,
+        document.documentElement.clientHeight
+      );
+    }
+
+    function postFrameHeight() {
+      if (window.parent === window) {
+        return;
+      }
+
+      window.parent.postMessage({
+        type: "pf-iframe-height",
+        height: getDocumentHeight()
+      }, "*");
+    }
+
+    function bindEmbedMessaging() {
+      let heightRaf = 0;
+      const requestHeightPost = () => {
+        if (heightRaf) {
+          cancelAnimationFrame(heightRaf);
+        }
+
+        heightRaf = requestAnimationFrame(() => {
+          postFrameHeight();
+          heightRaf = 0;
+        });
+      };
+
+      requestHeightPost();
+
+      window.addEventListener("load", requestHeightPost);
+      window.addEventListener("resize", requestHeightPost);
+      window.addEventListener("message", (event) => {
+        if (!event.data || event.data.type !== "pf-request-height") {
+          return;
+        }
+        requestHeightPost();
+      });
+
+      if ("ResizeObserver" in window) {
+        const resizeObserver = new ResizeObserver(() => requestHeightPost());
+        resizeObserver.observe(document.body);
+      } else {
+        window.setInterval(requestHeightPost, 1200);
+      }
+    }
+
+    function init() {
+      renderDashboard();
+      renderCompanyPage();
+      bindStaticEvents();
+      bindEmbedMessaging();
+    }
+
+    init();
+  </script>
+</body>
+<script>'undefined'=== typeof _trfq || (window._trfq = []);'undefined'=== typeof _trfd && (window._trfd=[]),_trfd.push({'tccl.baseHost':'secureserver.net'},{'ap':'cpsh-oh'},{'server':'p3plzcpnl504863'},{'dcenter':'p3'},{'cp_id':'10904367'},{'cp_cl':'8'}) // Monitoring performance to make your website faster. If you want to opt-out, please contact web hosting support.</script><script src='https://img1.wsimg.com/traffic-assets/js/tccl.min.js'></script></html>
