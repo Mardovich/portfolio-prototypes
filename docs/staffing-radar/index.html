@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staffing Radar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+html, body { height: 100%; margin: 0; padding: 0; }
+#root { height: 100vh; display: flex; flex-direction: column; }
+#app  { height: 100%; display: flex; flex-direction: column; }
+#root > #app { overflow: hidden; }
+.board { flex: 1; display: flex; overflow: hidden; gap: 4px; padding: 4px; }
+
+:root {
+  --bg:          #0d0e13;
+  --bg-card:     #16181f;
+  --bg-panel:    #111319;
+  --border:      rgba(255,255,255,0.07);
+  --text:        #f5f7fb;
+  --text-sub:    #b2b6c2;
+  --text-muted:  #7d8290;
+  --accent:      #e02550;
+  --action:      #1d72ea;
+  --indigo:      #818cf8;
+  --tone-strong: #22c55e;
+  --tone-good:   #60a5fa;
+  --tone-warn:   #f59e0b;
+  --tone-risk:   #ef4444;
+  --radius:      6px;
+  --gap:         4px;
+}
+
+* { box-sizing: border-box; }
+body {
+  background:
+    radial-gradient(ellipse 70% 35% at 60% 0%, rgba(29,114,234,.07) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 25% at 20% 0%, rgba(224,37,80,.05) 0%, transparent 55%),
+    #0d0e13;
+  color: var(--text);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.75rem;
+}
+
+.app-header {
+  height: 48px;
+  background: rgba(17,19,25,0.95);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 0 16px;
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+.app-header h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem; font-weight: 700; letter-spacing: -0.01em;
+  margin: 0;
+}
+.header-eyebrow {
+  font-size: 0.65rem; color: var(--accent); text-transform: uppercase;
+  letter-spacing: 0.08em; font-weight: 600;
+}
+.header-badge {
+  margin-left: auto;
+  background: rgba(29,114,234,0.12);
+  border: 1px solid rgba(29,114,234,0.25);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 0.65rem; color: var(--action); font-weight: 600;
+}
+
+.panel { display: flex; flex-direction: column; }
+.panel-left { flex: 0 0 56%; }
+.panel-right { flex: 0 0 calc(44% - 4px); }
+
+.columns { display: flex; flex: 1; gap: 4px; overflow: hidden; }
+.col {
+  display: flex; flex-direction: column; overflow: hidden;
+  border-radius: 10px;
+  background: rgba(17,19,25,0.8);
+  border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.col-header {
+  padding: 8px 10px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.col-count { font-size: 0.65rem; color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+.col-body { flex: 1; overflow: hidden; position: relative; }
+
+.breadcrumb-bar {
+  display: flex; gap: 3px; padding: 5px 8px; align-items: center; flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.crumb {
+  padding: 2px 8px; border-radius: 20px;
+  font-size: 0.68rem; font-weight: 500;
+  transition: background 0.12s;
+}
+.crumb-parent {
+  background: rgba(29,114,234,0.2); color: var(--action); cursor: pointer;
+  border: 1px solid rgba(29,114,234,0.25);
+}
+.crumb-parent:hover { background: rgba(29,114,234,0.35); }
+.crumb-current { background: rgba(255,255,255,0.06); color: var(--text-muted); cursor: default; }
+.crumb-sep { color: var(--text-muted); font-size: 0.68rem; opacity: 0.5; }
+
+.tile {
+  position: absolute;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.tile:hover {
+  transform: scale(1.015);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.1);
+  z-index: 10;
+}
+.tile-label { font-weight: 700; font-size: 0.8rem; color: rgba(255,255,255,0.95); }
+.tile-sub { font-size: 0.63rem; color: rgba(255,255,255,0.55); margin-top: 3px; }
+
+.person-cards-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+}
+.person-list-card {
+  background: rgba(22,24,31,0.9);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  padding: 9px 11px;
+  cursor: grab;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  user-select: none;
+}
+.person-list-card:hover {
+  border-color: rgba(29,114,234,0.5);
+  box-shadow: 0 0 0 1px rgba(29,114,234,0.3), 0 4px 16px rgba(0,0,0,0.2);
+}
+.person-list-card:active { cursor: grabbing; transform: scale(0.98); }
+.person-list-card .name { font-weight: 600; font-size: 0.78rem; color: var(--text); margin-bottom: 2px; }
+.person-list-card .meta { font-size: 0.68rem; color: var(--text-muted); }
+.person-list-card.locked { opacity: 0.45; cursor: not-allowed; border-left: 3px solid var(--text-muted); }
+.person-list-card.parttime { border-left: 3px solid var(--tone-warn); }
+.avail-bar { height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin: 4px 0 2px; }
+.avail-fill { height: 100%; background: var(--tone-good); border-radius: 2px; }
+.empty-msg { padding: 12px; text-align: center; color: var(--text-muted); font-size: 0.75rem; }
+
+.drop-zone {
+  position: absolute; inset: 8px;
+  border: 1.5px dashed rgba(255,255,255,0.12);
+  border-radius: 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.drop-zone.over {
+  border-color: var(--action);
+  background: rgba(29,114,234,0.07);
+  box-shadow: inset 0 0 0 1px rgba(29,114,234,0.15);
+}
+.drop-zone-text { color: var(--text-muted); font-size: 0.75rem; text-align: center; }
+
+.proposed-list-card {
+  background: rgba(22,24,31,0.9);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px; padding: 8px 10px;
+  font-size: 0.72rem;
+}
+.proposed-list-card .score-badge {
+  display: inline-block; padding: 1px 6px; border-radius: 10px;
+  font-weight: 700; font-size: 0.65rem; margin-top: 4px;
+}
+
+.position-list-card {
+  background: rgba(22,24,31,0.9);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px; padding: 8px 10px;
+  cursor: pointer; font-size: 0.72rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.position-list-card:hover, .position-list-card.selected {
+  border-color: rgba(29,114,234,0.5);
+  box-shadow: 0 0 0 1px rgba(29,114,234,0.2);
+}
+.position-list-card.drop-active {
+  border-color: var(--action);
+  background: rgba(29,114,234,0.08);
+}
+.position-list-card .pos-title { font-weight: 600; font-size: 0.78rem; }
+.position-list-card .pos-client { color: var(--text-muted); font-size: 0.68rem; margin-top: 1px; }
+.urgency-badge { display: inline-block; padding: 1px 4px; border-radius: 2px; font-size: 0.6rem; font-weight: 600; margin-top: 4px; }
+.urgency-high { background: var(--tone-risk); color: #fff; }
+.urgency-medium { background: var(--tone-warn); color: #000; }
+.urgency-low { background: var(--tone-neutral); color: #fff; }
+
+.sunburst-svg { width: 100%; height: 100%; }
+.sunburst-tooltip {
+  text-align: center; padding: 6px 10px; margin: 4px 8px 0;
+  background: rgba(0,0,0,0.4); border-radius: 6px;
+  font-size: 0.68rem; color: var(--text-sub);
+  min-height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.sunburst-tooltip strong { color: var(--text); font-size: 0.72rem; }
+
+.radar-svg { width: 100%; height: 100%; }
+.radar-axis-tip {
+  margin: 6px 8px 0; padding: 5px 8px;
+  background: rgba(0,0,0,0.35); border-radius: 5px;
+  font-size: 0.68rem; display: flex; align-items: center; gap: 8px;
+  min-height: 28px;
+}
+.radar-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 0.75rem; text-align: center; padding: 12px; }
+
+.score-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; font-size: 0.68rem; }
+.score-bar-label { width: 76px; color: var(--text-muted); flex-shrink: 0; }
+.score-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
+.score-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+.score-bar-pct { width: 30px; text-align: right; font-weight: 700; }
+.score-bar-verdict { width: 60px; font-size: 0.65rem; }
+.score-total { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 0.8rem; font-weight: 600; }
+
+.person-tooltip {
+  position: fixed; z-index: 1000; pointer-events: none;
+  background: rgba(22,24,31,0.97);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; padding: 10px 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  min-width: 180px;
+}
+.pt-name { font-weight: 700; font-size: 0.82rem; margin-bottom: 2px; }
+.pt-role { font-size: 0.68rem; color: var(--text-muted); margin-bottom: 8px; }
+.pt-grid { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 0.68rem; }
+.pt-k { color: var(--text-muted); }
+.pt-v { color: var(--text-sub); font-weight: 500; }
+
+.app-footer {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 52px;
+  background: rgba(17,19,25,0.97);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  display: flex; align-items: center; padding: 0 16px; gap: 12px; z-index: 100;
+}
+.footer-match-name { font-weight: 700; font-size: 0.82rem; }
+.footer-match-score { font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; }
+.footer-btn { padding: 6px 12px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
+.footer-btn-primary { background: var(--action); color: #fff; }
+.footer-btn-close { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 200;
+}
+.modal-content {
+  background: rgba(22,24,31,0.98);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 20px; width: 540px; max-height: 80vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.modal-header h3 { margin: 0; font-family: 'Space Grotesk', sans-serif; }
+.modal-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; }
+.modal-body { white-space: pre-wrap; font-family: 'Inter', monospace; font-size: 0.75rem; color: var(--text-sub); background: var(--bg); padding: 12px; border-radius: var(--radius); margin-bottom: 12px; }
+.modal-actions { display: flex; gap: 8px; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="app"></div>
+</div>
+
+<script>
+window.__DATA__ = {
+  people: [
+    { id:'p01', name:'Alex Mikalovich',  practice:'Development', skill:'Java',        level:'L3', loc:'Minsk',   bucket:'available',  avail:95,  yoe:6 },
+    { id:'p02', name:'Hanna Dubova',     practice:'Development', skill:'Java',        level:'L4', loc:'Minsk',   bucket:'available',  avail:80,  yoe:9 },
+    { id:'p03', name:'Ivan Krul',        practice:'Development', skill:'.NET',        level:'L2', loc:'Kyiv',    bucket:'available',  avail:100, yoe:3 },
+    { id:'p04', name:'Tanya Sviryd',     practice:'Development', skill:'.NET',        level:'L3', loc:'Minsk',   bucket:'parttime',   avail:50,  yoe:5 },
+    { id:'p05', name:'Dzmitry Kas',      practice:'Development', skill:'Python',      level:'L3', loc:'Warsaw',  bucket:'available',  avail:90,  yoe:5 },
+    { id:'p06', name:'Volha Naman',      practice:'Development', skill:'React',       level:'L2', loc:'Minsk',   bucket:'available',  avail:100, yoe:2 },
+    { id:'p07', name:'Rustam Aliev',     practice:'Development', skill:'React',       level:'L3', loc:'Kyiv',    bucket:'locked',     avail:0,   yoe:7 },
+    { id:'p08', name:'Sergei Volkov',    practice:'Development', skill:'Go',          level:'L3', loc:'Warsaw',  bucket:'available',  avail:70,  yoe:6 },
+    { id:'p09', name:'Diana Yurchak',    practice:'Development', skill:'Java',        level:'L2', loc:'Kyiv',    bucket:'available',  avail:100, yoe:2 },
+    { id:'p10', name:'Kiryl Proch',      practice:'QA',          skill:'Automation',  level:'L3', loc:'Minsk',   bucket:'available',  avail:100, yoe:5 },
+    { id:'p11', name:'Natallia Vol',     practice:'QA',          skill:'Automation',  level:'L2', loc:'Minsk',   bucket:'available',  avail:75,  yoe:3 },
+    { id:'p12', name:'Artem Bodnar',     practice:'QA',          skill:'Manual',      level:'L1', loc:'Kyiv',    bucket:'available',  avail:100, yoe:1 },
+    { id:'p13', name:'Lena Sakava',      practice:'QA',          skill:'Performance', level:'L4', loc:'Minsk',   bucket:'locked',     avail:20,  yoe:8 },
+    { id:'p14', name:'Denis Mazur',      practice:'QA',          skill:'Manual',      level:'L2', loc:'Warsaw',  bucket:'available',  avail:60,  yoe:3 },
+    { id:'p15', name:'Mark Burak',       practice:'DevOps',      skill:'AWS',         level:'L3', loc:'Wroclaw', bucket:'available',  avail:100, yoe:5 },
+    { id:'p16', name:'Sasha Kles',       practice:'DevOps',      skill:'Kubernetes',  level:'L4', loc:'Minsk',   bucket:'locked',     avail:0,   yoe:10 },
+    { id:'p17', name:'Pavel Rusin',      practice:'DevOps',      skill:'AWS',         level:'L2', loc:'Warsaw',  bucket:'available',  avail:80,  yoe:3 },
+    { id:'p18', name:'Olga Timchuk',     practice:'DevOps',      skill:'Terraform',   level:'L3', loc:'Kyiv',    bucket:'parttime',   avail:40,  yoe:6 },
+    { id:'p19', name:'Yury Blanch',      practice:'Management',  skill:'PM',          level:'L4', loc:'Minsk',   bucket:'available',  avail:60,  yoe:12 },
+    { id:'p20', name:'Anna Timofe',      practice:'Management',  skill:'BA',          level:'L3', loc:'Kyiv',    bucket:'available',  avail:100, yoe:7 },
+    { id:'p21', name:'Sergiy Popov',     practice:'Management',  skill:'BA',          level:'L2', loc:'Minsk',   bucket:'available',  avail:80,  yoe:4 },
+    { id:'p22', name:'Irina Koval',      practice:'Management',  skill:'PM',          level:'L3', loc:'Warsaw',  bucket:'parttime',   avail:50,  yoe:8 },
+  ],
+  positions: [
+    { id:'pos01', title:'Senior Java Developer',   client:'FinTech Corp',  domain:'Finance',    skill:'Java',        level:'L3', loc:'Minsk',  urgency:'high',   status:'open' },
+    { id:'pos02', title:'.NET Tech Lead',           client:'Insurance Co',  domain:'Insurance',  skill:'.NET',        level:'L3', loc:'Minsk',  urgency:'medium', status:'open' },
+    { id:'pos03', title:'QA Automation Engineer',  client:'RetailMax',     domain:'Retail',     skill:'Automation',  level:'L2', loc:'Any',    urgency:'high',   status:'open' },
+    { id:'pos04', title:'Cloud DevOps Engineer',   client:'CloudStart',    domain:'Technology', skill:'AWS',         level:'L2', loc:'Any',    urgency:'low',    status:'open' },
+    { id:'pos05', title:'Business Analyst',        client:'BankPro',       domain:'Finance',    skill:'BA',          level:'L3', loc:'Kyiv',   urgency:'medium', status:'open' },
+    { id:'pos06', title:'Python Backend Dev',      client:'DataFlow',      domain:'Analytics',  skill:'Python',      level:'L3', loc:'Remote', urgency:'high',   status:'open' },
+    { id:'pos07', title:'React Frontend Dev',      client:'UX Studio',     domain:'Technology', skill:'React',       level:'L2', loc:'Remote', urgency:'low',    status:'open' },
+    { id:'pos08', title:'Go Backend Engineer',     client:'LogiCloud',     domain:'Logistics',  skill:'Go',          level:'L3', loc:'Remote', urgency:'medium', status:'open' },
+    { id:'pos09', title:'Performance QA Lead',     client:'StreamCore',    domain:'Media',      skill:'Performance', level:'L4', loc:'Any',    urgency:'high',   status:'open' },
+    { id:'pos10', title:'DevOps / Terraform Lead', client:'InfraOps',      domain:'Technology', skill:'Terraform',   level:'L3', loc:'Any',    urgency:'medium', status:'open' },
+  ]
+};
+</script>
+
+<script type="text/babel">
+const { useState, useRef, useEffect, useMemo, useCallback } = React;
+
+const LEVEL_INT = { L1:1, L2:2, L3:3, L4:4 };
+const PRACTICE_COLORS = { Development:'#1d4ed8', QA:'#7c3aed', DevOps:'#047857', Management:'#b45309' };
+
+function capWeight(p) {
+  if (p.bucket === 'locked') return Math.max(0.3, LEVEL_INT[p.level] || 1);
+  return Math.max(0.3, (LEVEL_INT[p.level] || 1) * p.avail / 100);
+}
+
+function matchScore(person, position) {
+  const skillMatch     = person.skill === position.skill ? 100 : 30;
+  const seniorityDiff  = Math.abs((LEVEL_INT[person.level]||2) - (LEVEL_INT[position.level]||2));
+  const seniorityMatch = Math.max(0, 100 - seniorityDiff * 25);
+  const locMatch       = (['Any','Remote'].includes(position.loc) || person.loc === position.loc) ? 100 : 40;
+  const availMatch     = Math.min(100, person.avail);
+  const yoeExpected    = (LEVEL_INT[position.level]||2) * 2;
+  const expMatch       = Math.min(100, Math.max(0, 100 - Math.abs((person.yoe||4) - yoeExpected) * 10));
+  const total = Math.round(skillMatch*0.35 + seniorityMatch*0.25 + locMatch*0.20 + availMatch*0.12 + expMatch*0.08);
+  return { total, axes: { skillMatch, seniorityMatch, locMatch, availMatch, expMatch } };
+}
+
+function binarySplit(items, x, y, w, h) {
+  if (!items.length) return [];
+  if (items.length === 1) return [{ ...items[0], x, y, w, h }];
+  const total = items.reduce((s, i) => s + (i.weight || 1), 0);
+  let acc = 0, splitIdx = 0;
+  const half = total / 2;
+  for (let i = 0; i < items.length; i++) {
+    acc += items[i].weight || 1;
+    if (acc >= half) { splitIdx = i + 1; break; }
+  }
+  const PAD = 3;
+  const ratio1 = acc / total;
+  const a = items.slice(0, splitIdx);
+  const b = items.slice(splitIdx);
+  if (w >= h) {
+    const w1 = Math.max(1, Math.round(w * ratio1) - PAD);
+    const w2 = Math.max(1, w - w1 - PAD);
+    return [...binarySplit(a, x, y, w1, h), ...binarySplit(b, x + w1 + PAD, y, w2, h)];
+  } else {
+    const h1 = Math.max(1, Math.round(h * ratio1) - PAD);
+    const h2 = Math.max(1, h - h1 - PAD);
+    return [...binarySplit(a, x, y, w, h1), ...binarySplit(b, x, y + h1 + PAD, w, h2)];
+  }
+}
+
+function scoreColor(score) {
+  if (score >= 80) return 'var(--tone-strong)';
+  if (score >= 60) return 'var(--tone-good)';
+  if (score >= 40) return 'var(--tone-warn)';
+  return 'var(--tone-risk)';
+}
+
+function scoreLabel(score) {
+  if (score >= 80) return 'Strong Match';
+  if (score >= 60) return 'Good Match';
+  if (score >= 40) return 'Partial';
+  return 'Weak';
+}
+
+function scoreVerdict(score) {
+  if (score >= 80) return '\u2713 Strong';
+  if (score >= 60) return '\u2713 Good';
+  if (score >= 40) return '~ Partial';
+  return '\u2717 Weak';
+}
+
+function lightenColor(hex, pct) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, (num >> 16) + pct);
+  const g = Math.min(255, ((num >> 8) & 0x00FF) + pct);
+  const b = Math.min(255, (num & 0x0000FF) + pct);
+  return `rgb(${r},${g},${b})`;
+}
+
+function Breadcrumb({ drillPath, onNavigate }) {
+  const crumbs = [{ label: 'EPAM', path: [] }];
+  drillPath.forEach((seg, i) => {
+    crumbs.push({ label: seg, path: drillPath.slice(0, i + 1) });
+  });
+  return React.createElement('div', { className: 'breadcrumb-bar' },
+    crumbs.map((c, i) => {
+      const isCurrent = i === crumbs.length - 1;
+      return React.createElement(React.Fragment, { key: i },
+        i > 0 && React.createElement('span', { className: 'crumb-sep' }, '\u203a'),
+        React.createElement('span', {
+          className: `crumb ${isCurrent ? 'crumb-current' : 'crumb-parent'}`,
+          onClick: () => !isCurrent && onNavigate(c.path)
+        }, c.label)
+      );
+    })
+  );
+}
+
+function AvailableColumn({ people, drillPath, onNavigate, onHoverPerson, onLeavePerson }) {
+  const bodyRef = useRef(null);
+  const [dims, setDims] = useState({ w: 300, h: 400 });
+
+  useEffect(() => {
+    if (!bodyRef.current) return;
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setDims({ w: entry.contentRect.width, h: entry.contentRect.height });
+      }
+    });
+    ro.observe(bodyRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const level = drillPath.length;
+
+  const tiles = useMemo(() => {
+    if (level >= 2) return [];
+    let items;
+    if (level === 0) {
+      const groups = {};
+      people.forEach(p => {
+        if (!groups[p.practice]) groups[p.practice] = { practice: p.practice, weight: 0, count: 0 };
+        groups[p.practice].weight += capWeight(p);
+        groups[p.practice].count++;
+      });
+      items = Object.values(groups).sort((a, b) => b.weight - a.weight);
+    } else {
+      const practice = drillPath[0];
+      const groups = {};
+      people.filter(p => p.practice === practice).forEach(p => {
+        if (!groups[p.skill]) groups[p.skill] = { skill: p.skill, weight: 0, count: 0 };
+        groups[p.skill].weight += capWeight(p);
+        groups[p.skill].count++;
+      });
+      items = Object.values(groups).sort((a, b) => b.weight - a.weight);
+    }
+    return binarySplit(items, 0, 0, dims.w, dims.h);
+  }, [people, drillPath, dims, level]);
+
+  const personCards = useMemo(() => {
+    if (level < 2) return [];
+    const [practice, skill] = drillPath;
+    return people.filter(p => p.practice === practice && p.skill === skill);
+  }, [people, drillPath, level]);
+
+  const handleClick = (tile) => {
+    if (level === 0) onNavigate([tile.practice]);
+    else if (level === 1) onNavigate([drillPath[0], tile.skill]);
+  };
+
+  return React.createElement('div', { className: 'col', style: { flex: '2' } },
+    React.createElement('div', { className: 'col-header' },
+      'Available',
+      level > 0 && React.createElement('span', { className: 'col-count' },
+        level === 2 ? `${personCards.length} people` : `${tiles.length} skills`
+      )
+    ),
+    React.createElement(Breadcrumb, { drillPath, onNavigate }),
+    level < 2
+      ? React.createElement('div', { className: 'col-body', ref: bodyRef },
+          tiles.map((tile, i) => {
+            const color = PRACTICE_COLORS[tile.practice] || PRACTICE_COLORS[tile.skill] || 'var(--bg-card)';
+            const label = tile.practice || tile.skill;
+            return React.createElement('div', {
+              key: i, className: 'tile',
+              style: { position: 'absolute', left: tile.x, top: tile.y, width: tile.w, height: tile.h, background: color },
+              onClick: () => handleClick(tile)
+            },
+              React.createElement('div', { className: 'tile-label' }, label),
+              React.createElement('div', { className: 'tile-sub' }, `${tile.count} people \u00b7 ${tile.weight.toFixed(1)} cap`)
+            );
+          })
+        )
+      : React.createElement('div', { className: 'person-cards-list' },
+          personCards.length === 0
+            ? React.createElement('div', { className: 'empty-msg' }, 'No people in this skill group')
+            : personCards.map(person => {
+                const isLocked = person.bucket === 'locked';
+                const isParttime = person.bucket === 'parttime';
+                return React.createElement('div', {
+                  key: person.id,
+                  className: `person-list-card${isLocked ? ' locked' : ''}${isParttime ? ' parttime' : ''}`,
+                  draggable: !isLocked,
+                  onDragStart: (e) => {
+                    if (isLocked) { e.preventDefault(); return; }
+                    e.dataTransfer.setData('text/plain', person.id);
+                  },
+                  onMouseEnter: (e) => { onHoverPerson(person, e); },
+                  onMouseLeave: () => { onLeavePerson(); },
+                  onMouseMove: (e) => { onHoverPerson(person, e); }
+                },
+                  React.createElement('div', { className: 'name' }, person.name),
+                  React.createElement('div', { className: 'meta' }, `${person.skill} \u00b7 ${person.level} \u00b7 ${person.loc}`),
+                  React.createElement('div', { className: 'avail-bar' },
+                    React.createElement('div', { className: 'avail-fill', style: { width: `${person.avail}%` } })
+                  ),
+                  React.createElement('div', { className: 'meta' }, `${person.avail}% available`)
+                );
+              })
+        )
+  );
+}
+
+function ProposedColumn({ people, proposedIds, setProposedIds, selectedPosition }) {
+  const [over, setOver] = useState(false);
+  const bodyRef = useRef(null);
+
+  const handleDragOver = (e) => { e.preventDefault(); setOver(true); };
+  const handleDragLeave = () => setOver(false);
+  const handleDrop = (e) => {
+    e.preventDefault(); setOver(false);
+    const id = e.dataTransfer.getData('text/plain');
+    if (id && !proposedIds.includes(id)) setProposedIds([...proposedIds, id]);
+  };
+
+  const proposedPeople = proposedIds.map(id => people.find(p => p.id === id)).filter(Boolean);
+
+  return React.createElement('div', { className: 'col', style: { flex: '1.5' } },
+    React.createElement('div', { className: 'col-header' }, 'Proposed'),
+    React.createElement('div', { className: 'col-body', ref: bodyRef, onDragOver: handleDragOver, onDragLeave: handleDragLeave, onDrop: handleDrop },
+      proposedPeople.length === 0
+        ? React.createElement('div', { className: `drop-zone ${over ? 'over' : ''}` },
+            React.createElement('div', { className: 'drop-zone-text' }, 'Drag people here to propose')
+          )
+        : React.createElement('div', { className: 'person-cards-list' },
+            proposedPeople.map((person, i) => {
+              const pos = selectedPosition || null;
+              const score = pos ? matchScore(person, pos) : (() => {
+                let best = { total: 0 };
+                window.__DATA__.positions.forEach(position => {
+                  const s = matchScore(person, position);
+                  if (s.total > best.total) best = s;
+                });
+                return best;
+              })();
+              return React.createElement('div', {
+                key: person.id, className: 'proposed-list-card'
+              },
+                React.createElement('div', { className: 'name' }, person.name),
+                React.createElement('div', { className: 'meta' }, `${person.skill} \u00b7 ${person.level} \u00b7 ${person.loc}`),
+                React.createElement('div', { className: 'score-badge', style: { background: scoreColor(score.total), color: '#000' } }, `${score.total}%`)
+              );
+            })
+          )
+    )
+  );
+}
+
+function SunburstColumn({ people, drillPath, onNavigate }) {
+  const svgRef = useRef(null);
+  const [dims, setDims] = useState({ w: 200, h: 400 });
+  const [hovArc, setHovArc] = useState(null);
+
+  useEffect(() => {
+    if (!svgRef.current) return;
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) setDims({ w: entry.contentRect.width, h: entry.contentRect.height });
+    });
+    ro.observe(svgRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const { arcs, cx, cy, innerR, outerR } = useMemo(() => {
+    const practices = {};
+    people.forEach(p => {
+      if (!practices[p.practice]) practices[p.practice] = { practice: p.practice, weight: 0, skills: {} };
+      practices[p.practice].weight += capWeight(p);
+      if (!practices[p.practice].skills[p.skill]) practices[p.practice].skills[p.skill] = 0;
+      practices[p.practice].skills[p.skill] += capWeight(p);
+    });
+
+    const totalWeight = Object.values(practices).reduce((s, p) => s + p.weight, 0);
+    const cxv = dims.w / 2;
+    const cyv = dims.h / 2;
+    const innerRv = Math.min(dims.w, dims.h) * 0.15;
+    const outerRv = Math.min(dims.w, dims.h) * 0.35;
+
+    const result = [];
+    let angle = 0;
+    Object.values(practices).forEach(prac => {
+      const pracAngle = (prac.weight / totalWeight) * 2 * Math.PI;
+      const color = PRACTICE_COLORS[prac.practice] || '#666';
+
+      result.push({
+        type: 'practice',
+        startAngle: angle,
+        endAngle: angle + pracAngle,
+        innerR: innerRv, outerR: outerRv,
+        color,
+        label: prac.practice,
+        count: Object.keys(prac.skills).reduce((s, sk) => s + 1, 0),
+        weight: prac.weight
+      });
+
+      let skillAngle = angle;
+      Object.entries(prac.skills).forEach(([skill, sw]) => {
+        const skillArc = (sw / prac.weight) * pracAngle;
+        result.push({
+          type: 'skill',
+          startAngle: skillAngle,
+          endAngle: skillAngle + skillArc,
+          innerR: outerRv + 4,
+          outerR: outerRv + 20,
+          color: lightenColor(color, 30),
+          label: skill,
+          practice: prac.practice,
+          count: 1,
+          weight: sw
+        });
+        skillAngle += skillArc;
+      });
+
+      angle += pracAngle;
+    });
+
+    return { arcs: result, cx: cxv, cy: cyv, innerR: innerRv, outerR: outerRv };
+  }, [people, dims]);
+
+  function arcPath(cxv, cyv, r1, r2, startA, endA) {
+    const x1i = cxv + r1 * Math.cos(startA);
+    const y1i = cyv + r1 * Math.sin(startA);
+    const x2i = cxv + r1 * Math.cos(endA);
+    const y2i = cyv + r1 * Math.sin(endA);
+    const x1o = cxv + r2 * Math.cos(startA);
+    const y1o = cyv + r2 * Math.sin(startA);
+    const x2o = cxv + r2 * Math.cos(endA);
+    const y2o = cyv + r2 * Math.sin(endA);
+    const large = endA - startA > Math.PI ? 1 : 0;
+    return `M${x1i},${y1i} A${r1},${r1} 0 ${large} 1 ${x2i},${y2i} L${x2o},${y2o} A${r2},${r2} 0 ${large} 0 ${x1o},${y1o} Z`;
+  }
+
+  function handleArcClick(arc) {
+    if (arc.type === 'practice') {
+      if (drillPath[0] === arc.label && drillPath.length === 1) onNavigate([]);
+      else onNavigate([arc.label]);
+    } else if (arc.type === 'skill') {
+      if (drillPath[0] === arc.practice && drillPath[1] === arc.label) onNavigate([arc.practice]);
+      else onNavigate([arc.practice, arc.label]);
+    }
+  }
+
+  function arcOpacity(arc) {
+    if (!drillPath.length) return hovArc ? (hovArc === arc ? 1 : 0.5) : 0.85;
+    if (arc.type === 'practice') {
+      const isActive = arc.label === drillPath[0];
+      if (hovArc) return hovArc === arc ? 1 : 0.35;
+      return isActive ? 1 : 0.35;
+    } else {
+      const practiceMatch = arc.practice === drillPath[0];
+      const skillMatch = practiceMatch && arc.label === drillPath[1];
+      if (hovArc) return hovArc === arc ? 1 : 0.3;
+      if (drillPath.length === 1) return practiceMatch ? 0.8 : 0.25;
+      return skillMatch ? 1 : 0.25;
+    }
+  }
+
+  return React.createElement('div', { className: 'col', style: { flex: '1.5' } },
+    React.createElement('div', { className: 'col-header' }, 'Capacity Atlas'),
+    React.createElement('div', { className: 'col-body' },
+      React.createElement('svg', { ref: svgRef, className: 'sunburst-svg', viewBox: `0 0 ${dims.w} ${dims.h}` },
+        arcs.map((arc, i) =>
+          React.createElement('path', {
+            key: i,
+            d: arcPath(cx, cy, arc.innerR, arc.outerR, arc.startAngle - Math.PI/2, arc.endAngle - Math.PI/2),
+            fill: arc.color,
+            stroke: 'var(--bg)',
+            strokeWidth: 1,
+            opacity: arcOpacity(arc),
+            cursor: 'pointer',
+            onMouseEnter: () => setHovArc(arc),
+            onMouseLeave: () => setHovArc(null),
+            onClick: () => handleArcClick(arc)
+          })
+        ),
+        React.createElement('text', { x: cx, y: cy - 6, textAnchor: 'middle', fill: 'var(--text)', fontSize: '10', fontWeight: '600' }, 'Bench'),
+        React.createElement('text', { x: cx, y: cy + 8, textAnchor: 'middle', fill: 'var(--text-muted)', fontSize: '8' }, `${people.length} people`),
+        drillPath.length > 0 && React.createElement('text', { x: cx, y: cy + 18, textAnchor: 'middle',
+          style: { fontSize: 8, fill: 'var(--action)', cursor: 'pointer' },
+          onClick: () => onNavigate([])
+        }, '\u21a9 clear')
+      ),
+      hovArc && React.createElement('div', { className: 'sunburst-tooltip' },
+        React.createElement('strong', {}, hovArc.label),
+        React.createElement('span', {}, `${hovArc.count} people \u00b7 ${hovArc.weight.toFixed(1)} cap`)
+      )
+    )
+  );
+}
+
+function PositionsColumn({ positions, onSelectPosition, selectedPositionId }) {
+  const [drillPath, setDrillPath] = useState([]);
+  const bodyRef = useRef(null);
+  const [dims, setDims] = useState({ w: 200, h: 400 });
+  const [hoveredPosId, setHoveredPosId] = useState(null);
+
+  useEffect(() => {
+    if (!bodyRef.current) return;
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) setDims({ w: entry.contentRect.width, h: entry.contentRect.height });
+    });
+    ro.observe(bodyRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const level = drillPath.length;
+
+  const tiles = useMemo(() => {
+    if (level === 0) {
+      const groups = {};
+      positions.forEach(p => {
+        if (!groups[p.domain]) groups[p.domain] = { domain: p.domain, weight: 0, count: 0 };
+        groups[p.domain].weight++;
+        groups[p.domain].count++;
+      });
+      const items = Object.values(groups).sort((a, b) => b.weight - a.weight);
+      return binarySplit(items, 0, 0, dims.w, dims.h);
+    }
+    return [];
+  }, [positions, drillPath, dims, level]);
+
+  const domainPositions = useMemo(() => {
+    if (level !== 1) return [];
+    const domain = drillPath[0];
+    return positions.filter(p => p.domain === domain);
+  }, [positions, drillPath, level]);
+
+  const handleDrop = (e, pos) => {
+    e.preventDefault();
+    const personId = e.dataTransfer.getData('text/plain');
+    if (personId) {
+      onSelectPosition(pos, personId);
+    }
+  };
+
+  const handleDragOver = (e) => e.preventDefault();
+
+  return React.createElement('div', { className: 'col', style: { flex: '1' } },
+    React.createElement('div', { className: 'col-header' }, 'Open Positions'),
+    level === 0
+      ? React.createElement('div', { className: 'col-body', ref: bodyRef },
+          tiles.map((tile, i) =>
+            React.createElement('div', {
+              key: i, className: 'tile',
+              style: { left: tile.x, top: tile.y, width: tile.w, height: tile.h, background: 'var(--bg-card)', border: '1px solid var(--border)' },
+              onClick: () => setDrillPath([tile.domain])
+            },
+              React.createElement('div', { className: 'tile-label' }, tile.domain),
+              React.createElement('div', { className: 'tile-sub' }, `${tile.count} positions`)
+            )
+          )
+        )
+      : React.createElement('div', { className: 'person-cards-list' },
+          domainPositions.map((pos, i) => {
+            const isSel = pos.id === selectedPositionId || pos.id === hoveredPosId;
+            const urgClass = pos.urgency === 'high' ? 'urgency-high' : pos.urgency === 'medium' ? 'urgency-medium' : 'urgency-low';
+            return React.createElement('div', {
+              key: pos.id, className: `position-list-card ${isSel ? 'selected' : ''}`,
+              onClick: () => onSelectPosition(pos),
+              onDragOver: handleDragOver,
+              onDrop: (e) => handleDrop(e, pos),
+              onMouseEnter: () => setHoveredPosId(pos.id),
+              onMouseLeave: () => setHoveredPosId(null)
+            },
+              React.createElement('div', { className: 'pos-title' }, pos.title),
+              React.createElement('div', { className: 'pos-client' }, pos.client),
+              React.createElement('span', { className: `urgency-badge ${urgClass}` }, pos.urgency),
+              React.createElement('div', { className: 'meta' }, `Needs: ${pos.skill} ${pos.level}`)
+            );
+          })
+        )
+  );
+}
+
+function RadarColumn({ activeMatch }) {
+  const svgRef = useRef(null);
+  const [dims, setDims] = useState({ w: 200, h: 300 });
+  const [hovAxis, setHovAxis] = useState(null);
+
+  useEffect(() => {
+    if (!svgRef.current) return;
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) setDims({ w: entry.contentRect.width, h: entry.contentRect.height });
+    });
+    ro.observe(svgRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  if (!activeMatch) {
+    return React.createElement('div', { className: 'col', style: { flex: '1' } },
+      React.createElement('div', { className: 'col-header' }, 'Match Radar'),
+      React.createElement('div', { className: 'col-body' },
+        React.createElement('div', { className: 'radar-placeholder' }, 'Drop a candidate onto a position to see match radar')
+      )
+    );
+  }
+
+  const { person, position, score } = activeMatch;
+  const axes = ['skillMatch', 'seniorityMatch', 'locMatch', 'availMatch', 'expMatch'];
+  const axisLabels = ['Skills', 'Seniority', 'Location', 'Availability', 'Experience'];
+  const cx = dims.w / 2;
+  const cy = dims.h * 0.4;
+  const r = Math.min(cx, cy) - 20;
+
+  function pentPoint(angle, val) {
+    const dist = (val / 100) * r;
+    return { x: cx + dist * Math.cos(angle), y: cy + dist * Math.sin(angle) };
+  }
+
+  const bgPoints = [];
+  const dataPoints = [];
+  for (let i = 0; i < 5; i++) {
+    const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+    bgPoints.push(pentPoint(angle, 100));
+    dataPoints.push(pentPoint(angle, score.axes[axes[i]]));
+  }
+
+  const bgPoly = bgPoints.map(p => `${p.x},${p.y}`).join(' ');
+  const dataPoly = dataPoints.map(p => `${p.x},${p.y}`).join(' ');
+
+  const axisLines = [];
+  const axisLabelsEls = [];
+  for (let i = 0; i < 5; i++) {
+    const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+    const end = pentPoint(angle, 100);
+    axisLines.push(React.createElement('line', {
+      key: `ax${i}`,
+      x1: cx, y1: cy, x2: end.x, y2: end.y,
+      stroke: hovAxis === i ? 'rgba(255,255,255,0.3)' : 'var(--border)',
+      strokeWidth: hovAxis === i ? 1.5 : 1,
+      onMouseEnter: () => setHovAxis(i),
+      onMouseLeave: () => setHovAxis(null),
+      style: { cursor: 'crosshair' }
+    }));
+    const labelPt = pentPoint(angle, 115);
+    axisLabelsEls.push(React.createElement('text', {
+      key: `al${i}`,
+      x: labelPt.x, y: labelPt.y,
+      textAnchor: 'middle', dominantBaseline: 'middle',
+      fill: hovAxis === i ? 'var(--text)' : 'var(--text-muted)',
+      fontSize: '8', fontWeight: hovAxis === i ? '600' : '400',
+      onMouseEnter: () => setHovAxis(i),
+      onMouseLeave: () => setHovAxis(null),
+      style: { cursor: 'pointer' }
+    }, axisLabels[i]));
+  }
+
+  const gridLevels = [25, 50, 75, 100];
+  const grids = gridLevels.map((lv, gi) => {
+    const pts = [];
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+      pts.push(pentPoint(angle, lv));
+    }
+    return React.createElement('polygon', { key: `g${gi}`, points: pts.map(p => `${p.x},${p.y}`).join(' '), fill: 'none', stroke: 'var(--border)', strokeWidth: 0.5 });
+  });
+
+  return React.createElement('div', { className: 'col', style: { flex: '1' } },
+    React.createElement('div', { className: 'col-header' }, 'Match Radar'),
+    React.createElement('div', { className: 'col-body', style: { display: 'flex', flexDirection: 'column' } },
+      React.createElement('svg', { ref: svgRef, className: 'radar-svg', viewBox: `0 0 ${dims.w} ${dims.h * 0.5}`, style: { flex: '1' } },
+        ...grids,
+        ...axisLines,
+        React.createElement('polygon', { points: bgPoly, fill: 'rgba(129,140,248,0.05)', stroke: 'var(--border)', strokeWidth: 1 }),
+        React.createElement('polygon', { points: dataPoly, fill: 'rgba(129,140,248,0.25)', stroke: '#818cf8', strokeWidth: 1.5 }),
+        ...axisLabelsEls
+      ),
+      hovAxis !== null && React.createElement('div', { className: 'radar-axis-tip' },
+        React.createElement('strong', {}, axisLabels[hovAxis]),
+        React.createElement('span', { style: { color: scoreColor(score.axes[axes[hovAxis]]) } },
+          `${score.axes[axes[hovAxis]]}% \u2014 ${scoreVerdict(score.axes[axes[hovAxis]])}`
+        )
+      ),
+      React.createElement('div', { style: { padding: '8px', overflowY: 'auto', flex: '1' } },
+        axes.map((ax, i) => {
+          const val = score.axes[ax];
+          return React.createElement('div', { key: ax, className: 'score-bar' },
+            React.createElement('span', { className: 'score-bar-label' }, axisLabels[i]),
+            React.createElement('div', { className: 'score-bar-track' },
+              React.createElement('div', { className: 'score-bar-fill', style: { width: `${val}%`, background: scoreColor(val) } })
+            ),
+            React.createElement('span', { className: 'score-bar-pct' }, `${val}%`),
+            React.createElement('span', { className: 'score-bar-verdict', style: { color: scoreColor(val) } }, scoreVerdict(val))
+          );
+        }),
+        React.createElement('div', { className: 'score-total' },
+          React.createElement('span', {}, `Overall: ${score.total}%`),
+          React.createElement('span', { style: { color: scoreColor(score.total) } }, scoreLabel(score.total))
+        )
+      )
+    )
+  );
+}
+
+function PersonTooltip({ person, pos }) {
+  if (!person || !pos) return null;
+  return React.createElement('div', {
+    className: 'person-tooltip',
+    style: { left: pos.x + 14, top: Math.min(pos.y - 10, window.innerHeight - 180) }
+  },
+    React.createElement('div', { className: 'pt-name' }, person.name),
+    React.createElement('div', { className: 'pt-role' }, `${person.skill} \u00b7 ${person.level} \u00b7 ${person.practice}`),
+    React.createElement('div', { className: 'pt-grid' },
+      React.createElement('span', { className: 'pt-k' }, 'Location'),
+      React.createElement('span', { className: 'pt-v' }, person.loc),
+      React.createElement('span', { className: 'pt-k' }, 'Availability'),
+      React.createElement('span', { className: 'pt-v' }, `${person.avail}%`),
+      React.createElement('span', { className: 'pt-k' }, 'Experience'),
+      React.createElement('span', { className: 'pt-v' }, `${person.yoe} yrs`),
+      React.createElement('span', { className: 'pt-k' }, 'Status'),
+      React.createElement('span', { className: 'pt-v', style: { color: person.bucket === 'locked' ? 'var(--tone-risk)' : person.bucket === 'parttime' ? 'var(--tone-warn)' : 'var(--tone-strong)' } }, person.bucket)
+    )
+  );
+}
+
+function EmailModal({ activeMatch, onClose }) {
+  const [copied, setCopied] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+
+  if (!activeMatch) return null;
+  const { person, position, score } = activeMatch;
+
+  const emailTemplate = `Subject: ${person.name} \u2014 ${position.title} at ${position.client} \u2014 Proposal
+
+Hi ${position.client} Hiring Team,
+
+I'd like to propose ${person.name} for the ${position.title} role.
+
+Profile:
+\u2022 ${person.practice} / ${person.skill}, ${person.level} (${person.yoe} years experience)
+\u2022 Location: ${person.loc} | Availability: ${person.avail}% (${person.bucket})
+\u2022 Match Score: ${score.total}% (${scoreLabel(score.total)})
+
+Match Breakdown:
+\u2022 Skills alignment:   ${score.axes.skillMatch}%
+\u2022 Seniority fit:      ${score.axes.seniorityMatch}%
+\u2022 Location match:     ${score.axes.locMatch}%
+\u2022 Availability:       ${score.axes.availMatch}%
+\u2022 Experience fit:     ${score.axes.expMatch}%
+
+${person.name} is available ${person.avail > 80 ? 'immediately' : 'within 2 weeks'}. Happy to arrange an intro call.
+
+Best regards,
+Resource Manager, EPAM Systems`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(emailTemplate).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  if (!showModal) {
+    return React.createElement('div', { className: 'app-footer' },
+      React.createElement('span', { className: 'footer-match-name' },
+        `${person.name} \u2192 ${position.title} at ${position.client}`
+      ),
+      React.createElement('span', { className: 'footer-match-score', style: { background: scoreColor(score.total), color: '#000' } }, `${score.total}%`),
+      React.createElement('button', { className: 'footer-btn footer-btn-primary', onClick: () => setShowModal(true) }, 'Generate Email'),
+      React.createElement('button', { className: 'footer-btn footer-btn-close', onClick: onClose }, '\u2715 Clear')
+    );
+  }
+
+  return React.createElement('div', { className: 'modal-overlay', onClick: (e) => { if (e.target === e.currentTarget) setShowModal(false); } },
+    React.createElement('div', { className: 'modal-content' },
+      React.createElement('div', { className: 'modal-header' },
+        React.createElement('h3', {}, 'Email Proposal'),
+        React.createElement('button', { className: 'modal-close', onClick: () => setShowModal(false) }, '\u2715')
+      ),
+      React.createElement('div', { className: 'modal-body' }, emailTemplate),
+      React.createElement('div', { className: 'modal-actions' },
+        React.createElement('button', { className: 'footer-btn footer-btn-primary', onClick: handleCopy }, copied ? 'Copied! \u2713' : 'Copy to Clipboard'),
+        React.createElement('button', { className: 'footer-btn footer-btn-close', onClick: () => setShowModal(false) }, 'Close')
+      )
+    )
+  );
+}
+
+function App() {
+  const data = window.__DATA__;
+  const [proposedIds, setProposedIds] = useState([]);
+  const [activeMatch, setActiveMatch] = useState(null);
+  const [selectedPositionId, setSelectedPositionId] = useState(null);
+  const [availDrillPath, setAvailDrillPath] = useState([]);
+  const [hoveredPerson, setHoveredPerson] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
+  const handleSelectPosition = useCallback((position, personId) => {
+    const person = data.people.find(p => p.id === personId);
+    if (!person) return;
+    const score = matchScore(person, position);
+    setActiveMatch({ person, position, score });
+    setSelectedPositionId(position.id);
+    if (!proposedIds.includes(personId)) setProposedIds([...proposedIds, personId]);
+  }, [data.people, proposedIds]);
+
+  const handleClearMatch = useCallback(() => {
+    setActiveMatch(null);
+    setSelectedPositionId(null);
+  }, []);
+
+  const handleHoverPerson = useCallback((person, e) => {
+    setHoveredPerson(person);
+    setTooltipPos({ x: e.clientX, y: e.clientY });
+  }, []);
+
+  const handleLeavePerson = useCallback(() => {
+    setHoveredPerson(null);
+  }, []);
+
+  return React.createElement('div', { id: 'app' },
+    React.createElement('header', { className: 'app-header' },
+      React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } },
+        React.createElement('span', { className: 'header-eyebrow' }, 'EPAM Systems \u00b7 Resource Management'),
+        React.createElement('h1', {}, 'Staffing Radar')
+      ),
+      React.createElement('div', { style: { color: 'var(--text-muted)', fontSize: '0.72rem', marginLeft: 8 } },
+        `${data.people.length} people \u00b7 ${data.positions.filter(p => p.status === 'open').length} open positions`
+      ),
+      React.createElement('div', { className: 'header-badge' }, 'Portfolio Demo')
+    ),
+    React.createElement('div', { className: 'board' },
+      React.createElement('div', { className: 'panel panel-left' },
+        React.createElement('div', { className: 'columns' },
+          React.createElement(AvailableColumn, {
+            people: data.people,
+            drillPath: availDrillPath,
+            onNavigate: setAvailDrillPath,
+            onHoverPerson: handleHoverPerson,
+            onLeavePerson: handleLeavePerson
+          }),
+          React.createElement(ProposedColumn, {
+            people: data.people,
+            proposedIds,
+            setProposedIds,
+            selectedPosition: activeMatch ? activeMatch.position : null
+          }),
+          React.createElement(SunburstColumn, {
+            people: data.people,
+            drillPath: availDrillPath,
+            onNavigate: setAvailDrillPath
+          })
+        )
+      ),
+      React.createElement('div', { className: 'panel panel-right' },
+        React.createElement('div', { className: 'columns' },
+          React.createElement(PositionsColumn, {
+            positions: data.positions,
+            onSelectPosition: handleSelectPosition,
+            selectedPositionId
+          }),
+          React.createElement(RadarColumn, { activeMatch })
+        )
+      )
+    ),
+    activeMatch && React.createElement(EmailModal, { activeMatch, onClose: handleClearMatch }),
+    React.createElement(PersonTooltip, { person: hoveredPerson, pos: tooltipPos })
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('app'));
+root.render(React.createElement(App));
+</script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Siarhei Mardovich · Prototype demos</title>
+<meta name="description" content="Live interactive prototypes by Siarhei Mardovich, Principal Product Designer (Fintech, Capital Markets & Decision Intelligence).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#030816; --bg2:#101a31; --card:rgba(15,23,42,.7); --br:rgba(148,163,184,.16); --br-h:rgba(129,140,248,.4);
+    --t1:#f8fbff; --t2:#d6dfed; --t3:#a6b5cb; --accent:#98a6ff; }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--t1);
+    font-family:'Archivo',system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px;margin:0 auto;padding:clamp(48px,8vw,104px) clamp(20px,4vw,40px);}
+  .eyebrow{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--t3);margin:0 0 20px;}
+  h1{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:clamp(30px,4vw,46px);
+    line-height:1.08;letter-spacing:-.02em;margin:0 0 20px;max-width:18ch;}
+  .lead{font-size:clamp(17px,1vw+15px,19px);color:var(--t2);max-width:60ch;margin:0 0 14px;}
+  .links{font-size:15px;color:var(--t3);margin:0 0 56px;}
+  .links a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(129,140,248,.4);}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;}
+  .card{display:block;background:var(--card);border:1px solid var(--br);border-radius:12px;
+    padding:24px;text-decoration:none;color:inherit;transition:border-color .2s ease,transform .2s ease;}
+  .card:hover{border-color:var(--br-h);transform:translateY(-2px);}
+  .card .tag{font-family:'Space Grotesk',sans-serif;font-size:11.5px;font-weight:600;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--t3);margin:0 0 10px;}
+  .card h2{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:600;margin:0 0 8px;color:var(--t1);}
+  .card p{font-size:14.5px;color:var(--t3);margin:0 0 14px;}
+  .card .go{font-size:13px;color:var(--accent);font-weight:600;}
+  footer{margin-top:56px;font-size:13px;color:var(--t3);}
+  footer a{color:var(--accent);text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Siarhei Mardovich · Principal Product Designer</p>
+  <h1>Prototypes that make high-stakes data legible.</h1>
+  <p class="lead">Live, interactive interfaces behind the case studies on my site. Each is functional and data-rich, built in React and TypeScript, focused on decision intelligence and risk visualization for fintech and capital markets.</p>
+  <p class="links"><a href="https://siarheimardovich.com">siarheimardovich.com</a> &nbsp;·&nbsp; <a href="https://www.linkedin.com/in/siarheimardovich/">LinkedIn</a> &nbsp;·&nbsp; <a href="https://github.com/Mardovich/portfolio-prototypes">Source</a></p>
+
+  <div class="grid">
+    <a class="card" href="./volatility-surface/"><p class="tag">Options · Value-at-Risk</p><h2>Volatility Surface</h2><p>Linked decision workspace holding one market context across five views, with a stress-calibrated risk gauge.</p><span class="go">Open demo &rarr;</span></a>
+    <a class="card" href="./incline-trust/"><p class="tag">Reg-Tech · AI Review</p><h2>Incline Trust</h2><p>AI exception-review workspace for corporate spend that welds each verdict to an auditable record.</p><span class="go">Open demo &rarr;</span></a>
+    <a class="card" href="./uncertainty-as-signal/"><p class="tag">Climate Risk</p><h2>Uncertainty as Signal</h2><p>Disclosure platform turning 22,000 probabilistic points per asset into committee-ready intelligence.</p><span class="go">Open demo &rarr;</span></a>
+    <a class="card" href="./talent-caryatid/"><p class="tag">Talent Graph</p><h2>Know Who Knows</h2><p>Talent-mapping interface assembling a qualified team from a 200-person pool in under four minutes.</p><span class="go">Open demo &rarr;</span></a>
+    <a class="card" href="./clinical-benchmark/"><p class="tag">Clinical Analytics</p><h2>What Gets Measured</h2><p>Exception-led command center across 101 physicians and four years of benchmarking data.</p><span class="go">Open demo &rarr;</span></a>
+    <a class="card" href="./staffing-radar/"><p class="tag">Workforce Analytics</p><h2>HR as DJ, Staffing Radar</h2><p>Founder-built allocation model and decision layer that turns staffing uncertainty into moves.</p><span class="go">Open demo &rarr;</span></a>
+    <a class="card" href="./north-bridge/"><p class="tag">Private Capital</p><h2>North Bridge</h2><p>Coverage portal unifying signal triage, company context, notes, and follow-ups into one workflow.</p><span class="go">Open demo &rarr;</span></a>
+    <a class="card" href="./signalcare-cdx/"><p class="tag">Clinical Informatics</p><h2>Decision Logic Before Build</h2><p>Cross-platform clinical prototype on one shared state machine, verifying logic before native build.</p><span class="go">Open demo &rarr;</span></a>
+  </div>
+
+  <footer>One person, one identity. &nbsp;·&nbsp; <a href="https://siarheimardovich.com">siarheimardovich.com</a></footer>
+</div>
+</body>
+</html>

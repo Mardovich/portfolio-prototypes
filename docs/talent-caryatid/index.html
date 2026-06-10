@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caryatid2 — Talent Radar</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    @layer base, components, utilities;
+    
+    :root {
+      --md-sys-color-surface: #1a1c1e;
+      --md-sys-color-surface-variant: #43474e;
+      --md-sys-color-on-surface: #e3e2e6;
+      --md-sys-color-on-surface-variant: #c4c7d0;
+      --md-sys-color-primary: #9f9bff;
+      --md-sys-color-on-primary: #141218;
+      --md-sys-color-primary-container: #36334a;
+      --md-sys-color-on-primary-container: #e0dfff;
+      --md-sys-color-secondary: #cbc4df;
+      --md-sys-color-on-secondary: #25232a;
+      --md-sys-color-secondary-container: #3b3952;
+      --md-sys-color-on-secondary-container: #e8e0ff;
+      --md-sys-color-tertiary: #efb8c8;
+      --md-sys-color-on-tertiary: #3b2838;
+      --md-sys-color-tertiary-container: #533e4f;
+      --md-sys-color-on-tertiary-container: #ffd8e4;
+      --md-sys-color-error: #f2b8b5;
+      --md-sys-color-on-error: #601410;
+      --md-sys-color-outline: #8e9099;
+      --md-sys-color-outline-variant: #44464f;
+      --md-sys-color-surface-container-low: #141518;
+      --md-sys-color-surface-container: #1d2023;
+      --md-sys-color-surface-container-high: #272b30;
+      --md-sys-color-surface-container-highest: #32363b;
+      --md-elevation-1: 0 1px 3px 1px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.3);
+      --md-elevation-2: 0 2px 6px 2px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.3);
+      --md-elevation-3: 0 4px 8px 3px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.3);
+      --md-elevation-4: 0 6px 10px 4px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.3);
+      --md-radius-small: 8px;
+      --md-radius-medium: 12px;
+      --md-radius-large: 16px;
+      --md-radius-extra: 28px;
+      --font-family: 'Roboto', system-ui, sans-serif;
+    }
+    
+    *, *::before, *::after { box-sizing: border-box; }
+    
+    @layer base {
+      html, body, #root {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: var(--font-family);
+        background: var(--md-sys-color-surface);
+        color: var(--md-sys-color-on-surface);
+        -webkit-font-smoothing: antialiased;
+      }
+    }
+    
+    @layer components {
+      .app-shell {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+      
+      .app-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 24px;
+        background: var(--md-sys-color-surface-container);
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        flex-shrink: 0;
+      }
+      
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      
+      .logo-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--md-sys-color-primary-container), var(--md-sys-color-tertiary-container));
+        border-radius: var(--md-radius-medium);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+      }
+      
+      .logo-text {
+        font-size: 22px;
+        font-weight: 500;
+        letter-spacing: -0.5px;
+      }
+      
+      .logo-text span {
+        color: var(--md-sys-color-primary);
+      }
+      
+      .view-tabs {
+        display: flex;
+        gap: 4px;
+        background: var(--md-sys-color-surface-container-low);
+        padding: 4px;
+        border-radius: var(--md-radius-extra);
+      }
+      
+      .view-tab {
+        padding: 10px 20px;
+        border: none;
+        background: transparent;
+        color: var(--md-sys-color-on-surface-variant);
+        font-family: var(--font-family);
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: var(--md-radius-extra);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      
+      .view-tab:hover {
+        color: var(--md-sys-color-on-surface);
+      }
+      
+      .view-tab.active {
+        background: var(--md-sys-color-secondary-container);
+        color: var(--md-sys-color-on-secondary-container);
+        box-shadow: var(--md-elevation-1);
+      }
+      
+      .main-content {
+        flex: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .view-panel {
+        flex: 1;
+        overflow: auto;
+        padding: 24px;
+      }
+      
+      /* Roster View */
+      .roster-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      
+      .roster-filters {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      
+      .filter-chip {
+        padding: 8px 16px;
+        background: var(--md-sys-color-surface-container);
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: var(--md-radius-extra);
+        color: var(--md-sys-color-on-surface);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      
+      .filter-chip:hover {
+        background: var(--md-sys-color-surface-container-high);
+      }
+      
+      .filter-chip.active {
+        background: var(--md-sys-color-primary-container);
+        border-color: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary-container);
+      }
+      
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--md-sys-color-surface-container);
+        border-radius: var(--md-radius-large);
+        overflow: hidden;
+        box-shadow: var(--md-elevation-1);
+      }
+      
+      .data-table th {
+        background: var(--md-sys-color-surface-container-high);
+        padding: 14px 16px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--md-sys-color-on-surface-variant);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        user-select: none;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      
+      .data-table th:hover {
+        background: var(--md-sys-color-surface-container-highest);
+      }
+      
+      .data-table th .sort-indicator {
+        margin-left: 4px;
+        opacity: 0.6;
+      }
+      
+      .data-table td {
+        padding: 14px 16px;
+        border-top: 1px solid var(--md-sys-color-outline-variant);
+        font-size: 14px;
+      }
+      
+      .data-table tr {
+        cursor: pointer;
+        transition: background 0.1s ease;
+      }
+      
+      .data-table tr:hover {
+        background: var(--md-sys-color-surface-container-high);
+      }
+      
+      .person-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      
+      .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--md-sys-color-primary), var(--md-sys-color-tertiary));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+        font-size: 14px;
+        color: var(--md-sys-color-on-primary);
+      }
+      
+      .skill-tags {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+      
+      .skill-tag {
+        padding: 2px 8px;
+        background: var(--md-sys-color-secondary-container);
+        border-radius: 4px;
+        font-size: 11px;
+        color: var(--md-sys-color-on-secondary-container);
+      }
+      
+      .availability-bar {
+        width: 80px;
+        height: 6px;
+        background: var(--md-sys-color-surface-container-highest);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      
+      .availability-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.3s ease;
+      }
+      
+      .availability-bar-fill.high { background: #4ade80; }
+      .availability-bar-fill.medium { background: #fbbf24; }
+      .availability-bar-fill.low { background: #f87171; }
+      
+      /* Org Grid View */
+      .grid-container {
+        height: 100%;
+      }
+      
+      .grid-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        color: var(--md-sys-color-on-surface-variant);
+      }
+      
+      .breadcrumb-item {
+        padding: 6px 12px;
+        background: var(--md-sys-color-surface-container);
+        border-radius: var(--md-radius-small);
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+      
+      .breadcrumb-item:hover {
+        background: var(--md-sys-color-surface-container-high);
+      }
+      
+      .breadcrumb-separator {
+        color: var(--md-sys-color-outline);
+      }
+      
+      .treemap-container {
+        width: 100%;
+        height: calc(100% - 60px);
+        border-radius: var(--md-radius-large);
+        overflow: hidden;
+        box-shadow: var(--md-elevation-2);
+      }
+      
+      .treemap-cell {
+        transition: all 0.2s ease;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 12px;
+        overflow: hidden;
+      }
+      
+      .treemap-cell:hover {
+        filter: brightness(1.15);
+        z-index: 5;
+      }
+      
+      .treemap-label {
+        font-weight: 500;
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .treemap-sublabel {
+        font-size: 11px;
+        opacity: 0.8;
+        margin-top: 4px;
+      }
+      
+      /* Network View */
+      .network-container {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+      
+      .network-svg {
+        width: 100%;
+        height: 100%;
+      }
+      
+      .network-node {
+        cursor: pointer;
+      }
+      
+      .network-node circle {
+        transition: all 0.2s ease;
+      }
+      
+      .network-node:hover circle {
+        filter: brightness(1.2);
+      }
+      
+      .network-node text {
+        font-size: 10px;
+        fill: var(--md-sys-color-on-surface);
+        pointer-events: none;
+      }
+      
+      .network-link {
+        stroke: var(--md-sys-color-outline-variant);
+        stroke-opacity: 0.4;
+        stroke-width: 1;
+      }
+      
+      /* Bottom Sheet */
+      .bottom-sheet-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 100;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+      }
+      
+      .bottom-sheet-overlay.open {
+        opacity: 1;
+        visibility: visible;
+      }
+      
+      .bottom-sheet {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--md-sys-color-surface-container);
+        border-radius: var(--md-radius-large) var(--md-radius-large) 0 0;
+        z-index: 101;
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+        max-height: 80vh;
+        overflow: auto;
+      }
+      
+      .bottom-sheet.open {
+        transform: translateY(0);
+      }
+      
+      .bottom-sheet-handle {
+        width: 32px;
+        height: 4px;
+        background: var(--md-sys-color-outline-variant);
+        border-radius: 2px;
+        margin: 12px auto;
+      }
+      
+      .bottom-sheet-content {
+        padding: 0 24px 24px;
+      }
+      
+      .sheet-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      
+      .sheet-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--md-sys-color-primary), var(--md-sys-color-tertiary));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 500;
+      }
+      
+      .sheet-info h2 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 500;
+      }
+      
+      .sheet-info p {
+        margin: 4px 0 0;
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 14px;
+      }
+      
+      .sheet-section {
+        margin-bottom: 20px;
+      }
+      
+      .sheet-section h4 {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--md-sys-color-on-surface-variant);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0 0 12px;
+      }
+      
+      .sheet-skills {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      
+      .sheet-skill {
+        padding: 6px 14px;
+        background: var(--md-sys-color-secondary-container);
+        border-radius: var(--md-radius-extra);
+        font-size: 13px;
+        color: var(--md-sys-color-on-secondary-container);
+      }
+      
+      .sheet-detail {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      }
+      
+      .sheet-detail-label {
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 14px;
+      }
+      
+      .sheet-detail-value {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 24px;
+        border: none;
+        border-radius: var(--md-radius-extra);
+        font-family: var(--font-family);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      
+      .btn-primary {
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+      }
+      
+      .btn-primary:hover {
+        filter: brightness(1.1);
+        box-shadow: var(--md-elevation-2);
+      }
+      
+      .btn-secondary {
+        background: var(--md-sys-color-surface-container-high);
+        color: var(--md-sys-color-on-surface);
+      }
+      
+      .btn-secondary:hover {
+        background: var(--md-sys-color-surface-container-highest);
+      }
+      
+      /* Tour Overlay */
+      .tour-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+      }
+      
+      .tour-overlay.open {
+        opacity: 1;
+        visibility: visible;
+      }
+      
+      .tour-card {
+        background: var(--md-sys-color-surface-container);
+        border-radius: var(--md-radius-large);
+        padding: 32px;
+        max-width: 480px;
+        box-shadow: var(--md-elevation-4);
+      }
+      
+      .tour-step-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        background: var(--md-sys-color-primary-container);
+        border-radius: var(--md-radius-extra);
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--md-sys-color-on-primary-container);
+        margin-bottom: 16px;
+      }
+      
+      .tour-title {
+        font-size: 20px;
+        font-weight: 500;
+        margin: 0 0 12px;
+      }
+      
+      .tour-description {
+        color: var(--md-sys-color-on-surface-variant);
+        line-height: 1.6;
+        margin: 0 0 24px;
+      }
+      
+      .tour-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+      
+      /* Status Badge */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: var(--md-radius-extra);
+        font-size: 12px;
+        font-weight: 500;
+      }
+      
+      .status-badge.available {
+        background: rgba(74, 222, 128, 0.15);
+        color: #4ade80;
+      }
+      
+      .status-badge.assigned {
+        background: rgba(251, 191, 36, 0.15);
+        color: #fbbf24;
+      }
+      
+      .status-badge.bench {
+        background: rgba(96, 165, 250, 0.15);
+        color: #60a5fa;
+      }
+      
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      
+      /* Empty State */
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        text-align: center;
+        color: var(--md-sys-color-on-surface-variant);
+      }
+      
+      .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+      }
+      
+      /* Shortlist */
+      .shortlist-count {
+        padding: 4px 12px;
+        background: var(--md-sys-color-tertiary-container);
+        border-radius: var(--md-radius-extra);
+        font-size: 13px;
+        color: var(--md-sys-color-on-tertiary-container);
+      }
+    }
+    
+    @layer utilities {
+      .text-center { text-align: center; }
+      .text-right { text-align: right; }
+      .font-medium { font-weight: 500; }
+      .text-muted { color: var(--md-sys-color-on-surface-variant); }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useMemo, useEffect, useRef } = React;
+    
+    // Generate mock data
+    const generateMockData = () => {
+      const firstNames = ['Elena', 'Marcus', 'Priya', 'Chen', 'Sofia', 'James', 'Aisha', 'Viktor', 'Maria', 'Ahmed', 'Yuki', 'Anna', 'David', 'Fatima', 'Lucas', 'Nina', 'Omar', 'Helena', 'Raj', 'Zara'];
+      const lastNames = ['Volkov', 'Chen', 'Sharma', 'Kim', 'Petrov', 'Singh', 'Okonkwo', 'Santos', 'Johansson', 'Nguyen', 'Patel', 'Muller', 'Costa', 'Ali', 'Kowalski', 'Silva', 'Tanaka', 'Dubois', 'Hassan', 'Popov'];
+      const roles = ['Senior Software Engineer', 'Software Engineer', 'Tech Lead', 'Data Scientist', 'QA Engineer', 'DevOps Engineer', 'Product Manager', 'UX Designer', 'Business Analyst', 'Solution Architect'];
+      const levels = ['L1', 'L2', 'L3', 'L4', 'L5'];
+      const practices = ['Delivery', 'Quality', 'Data', 'Advisory', 'Infrastructure'];
+      const locations = ['New York', 'London', 'Berlin', 'Singapore', 'Sydney', 'Toronto', 'Mumbai', 'São Paulo'];
+      const skillSets = [
+        ['React', 'TypeScript', 'Node.js', 'AWS'],
+        ['Python', 'TensorFlow', 'SQL', 'Docker'],
+        ['Java', 'Spring', 'Kubernetes', 'CI/CD'],
+        ['React', 'GraphQL', 'PostgreSQL', 'GCP'],
+        ['C#', '.NET', 'Azure', 'SQL Server'],
+        ['Go', 'Microservices', 'gRPC', 'Terraform'],
+        ['Swift', 'iOS', 'Xcode', 'Core Data'],
+        ['Angular', 'RxJS', 'Firebase', 'Jest'],
+        ['Scala', 'Spark', 'Kafka', 'Airflow'],
+        ['PHP', 'Laravel', 'MySQL', 'Docker']
+      ];
+      const domains = ['Financial Services', 'Healthcare', 'Retail', 'Media', 'Manufacturing', 'Energy'];
+      
+      const people = [];
+      const connections = [];
+      
+      for (let i = 0; i < 50; i++) {
+        const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+        const role = roles[Math.floor(Math.random() * roles.length)];
+        const level = levels[Math.floor(Math.random() * levels.length)];
+        const practice = practices[Math.floor(Math.random() * practices.length)];
+        const location = locations[Math.floor(Math.random() * locations.length)];
+        const skills = skillSets[Math.floor(Math.random() * skillSets.length)];
+        const domain = domains[Math.floor(Math.random() * domains.length)];
+        const availability = [0, 25, 50, 75, 100][Math.floor(Math.random() * 5)];
+        
+        const status = availability === 0 ? 'On Assignment' : availability === 100 ? 'Available' : 'Partial';
+        
+        people.push({
+          id: `p${i + 1}`,
+          name: `${firstName} ${lastName}`,
+          initials: `${firstName[0]}${lastName[0]}`,
+          role,
+          level,
+          practice,
+          location,
+          skills,
+          domain,
+          availability,
+          status,
+          capacityWeight: availability / 100,
+          manager: `Manager ${Math.floor(i / 5) + 1}`,
+          benchBucket: availability === 100 ? 'Bench Available' : availability > 0 ? 'Bench Partial' : 'Assigned'
+        });
+      }
+      
+      // Generate some connections (colleagues who worked together)
+      for (let i = 0; i < 80; i++) {
+        const source = Math.floor(Math.random() * 50);
+        let target = Math.floor(Math.random() * 50);
+        while (target === source) target = Math.floor(Math.random() * 50);
+        connections.push({ source: `p${source + 1}`, target: `p${target + 1}` });
+      }
+      
+      return { people, connections };
+    };
+    
+    const { people: mockPeople, connections: mockConnections } = generateMockData();
+    
+    // Tour steps
+    const tourSteps = [
+      {
+        step: 1,
+        title: "The Challenge",
+        description: "You're an HR Manager assembling a tiger team for a new AI initiative. You have a document describing project requirements, but finding the right talent across the organization is overwhelming."
+      },
+      {
+        step: 2,
+        title: "The Roster",
+        description: "The system processes your requirements and presents a broad list of candidates. Use the filter chips to narrow by practice, location, or availability. Click any row to view their profile."
+      },
+      {
+        step: 3,
+        title: "Org Grid",
+        description: "Switch to Grid view to visualize talent distribution. Rectangle size represents capacity. Notice clusters of relevant skills in unexpected departments—these are hidden gems."
+      },
+      {
+        step: 4,
+        title: "Talent Network",
+        description: "Switch to Network view to see relationships between people. Lines show connections—colleagues who've worked together. Identify 'hub' people who connect multiple teams."
+      },
+      {
+        step: 5,
+        title: "Actionable Insight",
+        description: "Click the hub person to open their profile sheet. Review their skills, domain expertise, and availability. Add them to your shortlist to build your team."
+      }
+    ];
+    
+    // Utility components
+    const Avatar = ({ initials, size = 36 }) => (
+      <div className="avatar" style={{ width: size, height: size, fontSize: size * 0.4 }}>
+        {initials}
+      </div>
+    );
+    
+    const SkillTags = ({ skills, max = 3 }) => (
+      <div className="skill-tags">
+        {skills.slice(0, max).map((skill, i) => (
+          <span key={i} className="skill-tag">{skill}</span>
+        ))}
+        {skills.length > max && <span className="skill-tag">+{skills.length - max}</span>}
+      </div>
+    );
+    
+    const AvailabilityBar = ({ percent }) => {
+      const level = percent === 100 ? 'high' : percent > 50 ? 'medium' : 'low';
+      return (
+        <div className="availability-bar">
+          <div className={`availability-bar-fill ${level}`} style={{ width: `${percent}%` }} />
+        </div>
+      );
+    };
+    
+    const StatusBadge = ({ status }) => {
+      const className = status === 'Available' ? 'available' : status === 'On Assignment' ? 'assigned' : 'bench';
+      return (
+        <span className={`status-badge ${className}`}>
+          <span className="dot" />
+          {status}
+        </span>
+      );
+    };
+    
+    // Views
+    const RosterView = ({ data, onSelectPerson }) => {
+      const [sortKey, setSortKey] = useState('name');
+      const [sortDir, setSortDir] = useState('asc');
+      const [filter, setFilter] = useState('All');
+      
+      const practices = ['All', ...new Set(data.map(p => p.practice))];
+      
+      const filtered = useMemo(() => {
+        if (filter === 'All') return data;
+        return data.filter(p => p.practice === filter);
+      }, [data, filter]);
+      
+      const sorted = useMemo(() => {
+        return [...filtered].sort((a, b) => {
+          const aVal = a[sortKey];
+          const bVal = b[sortKey];
+          if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
+          if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }, [filtered, sortKey, sortDir]);
+      
+      const handleSort = (key) => {
+        if (sortKey === key) {
+          setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+        } else {
+          setSortKey(key);
+          setSortDir('asc');
+        }
+      };
+      
+      const SortIndicator = ({ column }) => (
+        <span className="sort-indicator">
+          {sortKey === column ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}
+        </span>
+      );
+      
+      return (
+        <div className="roster-container">
+          <div className="roster-filters">
+            {practices.map(p => (
+              <button
+                key={p}
+                className={`filter-chip ${filter === p ? 'active' : ''}`}
+                onClick={() => setFilter(p)}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+          
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th onClick={() => handleSort('name')}>Name <SortIndicator column="name" /></th>
+                <th onClick={() => handleSort('role')}>Role <SortIndicator column="role" /></th>
+                <th onClick={() => handleSort('level')}>Level <SortIndicator column="level" /></th>
+                <th onClick={() => handleSort('practice')}>Practice <SortIndicator column="practice" /></th>
+                <th onClick={() => handleSort('location')}>Location <SortIndicator column="location" /></th>
+                <th onClick={() => handleSort('availability')}>Availability</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map(person => (
+                <tr key={person.id} onClick={() => onSelectPerson(person)}>
+                  <td>
+                    <div className="person-cell">
+                      <Avatar initials={person.initials} />
+                      <span>{person.name}</span>
+                    </div>
+                  </td>
+                  <td>{person.role}</td>
+                  <td>{person.level}</td>
+                  <td>
+                    <SkillTags skills={[person.practice]} max={1} />
+                  </td>
+                  <td>{person.location}</td>
+                  <td><AvailabilityBar percent={person.availability} /></td>
+                  <td><StatusBadge status={person.status} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    };
+    
+    const OrgGridView = ({ data, onSelectPerson }) => {
+      const [breadcrumbs, setBreadcrumbs] = useState(['All']);
+      const containerRef = useRef(null);
+      const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
+      
+      useEffect(() => {
+        const updateDim = () => {
+          if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            setDimensions({ width: rect.width, height: rect.height });
+          }
+        };
+        updateDim();
+        window.addEventListener('resize', updateDim);
+        return () => window.removeEventListener('resize', updateDim);
+      }, []);
+      
+      const currentData = useMemo(() => {
+        let grouped = {};
+        data.forEach(p => {
+          const key = breadcrumbs[breadcrumbs.length - 1];
+          if (key === 'All') {
+            const practiceKey = p.practice;
+            grouped[practiceKey] = (grouped[practiceKey] || []).concat(p);
+          } else if (breadcrumbs.length === 2) {
+            const locKey = p.location;
+            grouped[locKey] = (grouped[locKey] || []).concat(p);
+          }
+        });
+        return grouped;
+      }, [data, breadcrumbs]);
+      
+      const colors = {
+        'Delivery': '#9f9bff',
+        'Quality': '#cbc4df',
+        'Data': '#efb8c8',
+        'Advisory': '#4ade80',
+        'Infrastructure': '#60a5fa'
+      };
+      
+      const handleCellClick = (key) => {
+        if (breadcrumbs.length < 2 && key !== 'All') {
+          setBreadcrumbs([...breadcrumbs, key]);
+        }
+      };
+      
+      const handleDrillDown = (person) => {
+        onSelectPerson(person);
+      };
+      
+      const treemapData = useMemo(() => {
+        const entries = Object.entries(currentData).map(([key, items]) => ({
+          key,
+          value: items.reduce((sum, p) => sum + p.capacityWeight, 0),
+          count: items.length,
+          items
+        }));
+        
+        if (entries.length === 0) return [];
+        
+        const root = d3.hierarchy({ children: entries })
+          .sum(d => d.value || 0)
+          .sort((a, b) => b.value - a.value);
+        
+        const treemap = d3.treemap()
+          .size([dimensions.width, dimensions.height])
+          .padding(4)
+          .round(true);
+        
+        treemap(root);
+        
+        return root.leaves();
+      }, [currentData, dimensions]);
+      
+      return (
+        <div className="grid-container">
+          <div className="grid-breadcrumb">
+            {breadcrumbs.map((crumb, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span className="breadcrumb-separator">/</span>}
+                <span 
+                  className="breadcrumb-item"
+                  onClick={() => setBreadcrumbs(breadcrumbs.slice(0, i + 1))}
+                >
+                  {crumb}
+                </span>
+              </React.Fragment>
+            ))}
+          </div>
+          
+          <div className="treemap-container" ref={containerRef}>
+            {breadcrumbs.length === 1 ? (
+              treemapData.map((cell, i) => (
+                <div
+                  key={i}
+                  className="treemap-cell"
+                  style={{
+                    position: 'absolute',
+                    left: cell.x0,
+                    top: cell.y0,
+                    width: cell.x1 - cell.x0,
+                    height: cell.y1 - cell.y0,
+                    background: colors[cell.data.key] || '#444',
+                    borderRadius: '8px'
+                  }}
+                  onClick={() => handleCellClick(cell.data.key)}
+                >
+                  <div className="treemap-label">{cell.data.key}</div>
+                  <div className="treemap-sublabel">{cell.data.count} people</div>
+                </div>
+              ))
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', padding: '8px' }}>
+                {Object.values(currentData).flat().map(person => (
+                  <div
+                    key={person.id}
+                    className="treemap-cell"
+                    style={{
+                      background: colors[person.practice] || '#444',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => handleDrillDown(person)}
+                  >
+                    <div className="treemap-label">{person.name}</div>
+                    <div className="treemap-sublabel">{person.role} • {person.availability}% avail</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+    
+    const TalentNetworkView = ({ data, connections, onSelectPerson }) => {
+      const svgRef = useRef(null);
+      
+      useEffect(() => {
+        if (!svgRef.current) return;
+        
+        const width = svgRef.current.clientWidth;
+        const height = svgRef.current.clientHeight;
+        
+        const nodes = data.map(p => ({ ...p }));
+        const nodeById = {};
+        nodes.forEach(n => nodeById[n.id] = n);
+        
+        const links = connections.map(c => ({
+          source: nodeById[c.source],
+          target: nodeById[c.target]
+        })).filter(l => l.source && l.target);
+        
+        const simulation = d3.forceSimulation(nodes)
+          .force('link', d3.forceLink(links).id(d => d.id).distance(60))
+          .force('charge', d3.forceManyBody().strength(-150))
+          .force('center', d3.forceCenter(width / 2, height / 2))
+          .force('collision', d3.forceCollide().radius(25));
+        
+        const svg = d3.select(svgRef.current);
+        svg.selectAll('*').remove();
+        
+        const g = svg.append('g');
+        
+        const link = g.append('g')
+          .selectAll('line')
+          .data(links)
+          .join('line')
+          .attr('class', 'network-link');
+        
+        const node = g.append('g')
+          .selectAll('g')
+          .data(nodes)
+          .join('g')
+          .attr('class', 'network-node')
+          .call(d3.drag()
+            .on('start', (event, d) => {
+              if (!event.active) simulation.alphaTarget(0.3).restart();
+              d.fx = d.x;
+              d.fy = d.y;
+            })
+            .on('drag', (event, d) => {
+              d.fx = event.x;
+              d.fy = event.y;
+            })
+            .on('end', (event, d) => {
+              if (!event.active) simulation.alphaTarget(0);
+              d.fx = null;
+              d.fy = null;
+            }))
+          .on('click', (event, d) => onSelectPerson(d));
+        
+        node.append('circle')
+          .attr('r', 20)
+          .attr('fill', 'url(#nodeGradient)');
+        
+        node.append('text')
+          .attr('dy', 32)
+          .attr('text-anchor', 'middle')
+          .text(d => d.name.split(' ')[0]);
+        
+        const defs = svg.append('defs');
+        const gradient = defs.append('radialGradient')
+          .attr('id', 'nodeGradient');
+        gradient.append('stop').attr('offset', '0%').attr('stop-color', '#9f9bff');
+        gradient.append('stop').attr('offset', '100%').attr('stop-color', '#efb8c8');
+        
+        simulation.on('tick', () => {
+          link
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y);
+          
+          node.attr('transform', d => `translate(${d.x},${d.y})`);
+        });
+        
+        const zoom = d3.zoom()
+          .scaleExtent([0.5, 3])
+          .on('zoom', (event) => {
+            g.attr('transform', event.transform);
+          });
+        
+        svg.call(zoom);
+        
+        return () => simulation.stop();
+      }, [data, connections, onSelectPerson]);
+      
+      return (
+        <div className="network-container">
+          <svg ref={svgRef} className="network-svg" />
+        </div>
+      );
+    };
+    
+    const BottomSheet = ({ person, isOpen, onClose, onAddToShortlist }) => {
+      if (!person) return null;
+      
+      return (
+        <>
+          <div className={`bottom-sheet-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
+          <div className={`bottom-sheet ${isOpen ? 'open' : ''}`}>
+            <div className="bottom-sheet-handle" />
+            <div className="bottom-sheet-content">
+              <div className="sheet-header">
+                <div className="sheet-avatar">{person.initials}</div>
+                <div className="sheet-info">
+                  <h2>{person.name}</h2>
+                  <p>{person.role} • {person.level}</p>
+                </div>
+              </div>
+              
+              <div className="sheet-section">
+                <h4>Skills</h4>
+                <div className="sheet-skills">
+                  {person.skills.map((skill, i) => (
+                    <span key={i} className="sheet-skill">{skill}</span>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="sheet-section">
+                <h4>Details</h4>
+                <div className="sheet-detail">
+                  <span className="sheet-detail-label">Practice</span>
+                  <span className="sheet-detail-value">{person.practice}</span>
+                </div>
+                <div className="sheet-detail">
+                  <span className="sheet-detail-label">Location</span>
+                  <span className="sheet-detail-value">{person.location}</span>
+                </div>
+                <div className="sheet-detail">
+                  <span className="sheet-detail-label">Domain</span>
+                  <span className="sheet-detail-value">{person.domain}</span>
+                </div>
+                <div className="sheet-detail">
+                  <span className="sheet-detail-label">Availability</span>
+                  <span className="sheet-detail-value">{person.availability}%</span>
+                </div>
+                <div className="sheet-detail">
+                  <span className="sheet-detail-label">Manager</span>
+                  <span className="sheet-detail-value">{person.manager}</span>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                <button className="btn btn-primary" onClick={() => onAddToShortlist(person)}>
+                  Add to Shortlist
+                </button>
+                <button className="btn btn-secondary" onClick={onClose}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    };
+    
+    const TourOverlay = ({ isOpen, currentStep, onNext, onPrev, onClose }) => {
+      if (!isOpen) return null;
+      
+      const step = tourSteps[currentStep];
+      
+      return (
+        <div className={`tour-overlay ${isOpen ? 'open' : ''}`}>
+          <div className="tour-card">
+            <span className="tour-step-badge">Step {step.step} of {tourSteps.length}</span>
+            <h3 className="tour-title">{step.title}</h3>
+            <p className="tour-description">{step.description}</p>
+            <div className="tour-actions">
+              {currentStep > 0 && (
+                <button className="btn btn-secondary" onClick={onPrev}>
+                  Previous
+                </button>
+              )}
+              {currentStep < tourSteps.length - 1 ? (
+                <button className="btn btn-primary" onClick={onNext}>
+                  Next
+                </button>
+              ) : (
+                <button className="btn btn-primary" onClick={onClose}>
+                  Start Exploring
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+    
+    // Main App
+    const App = () => {
+      const [view, setView] = useState('roster');
+      const [selectedPerson, setSelectedPerson] = useState(null);
+      const [isSheetOpen, setIsSheetOpen] = useState(false);
+      const [isTourOpen, setIsTourOpen] = useState(true);
+      const [tourStep, setTourStep] = useState(0);
+      const [shortlist, setShortlist] = useState([]);
+      
+      const handleSelectPerson = (person) => {
+        setSelectedPerson(person);
+        setIsSheetOpen(true);
+      };
+      
+      const handleCloseSheet = () => {
+        setIsSheetOpen(false);
+        setTimeout(() => setSelectedPerson(null), 300);
+      };
+      
+      const handleAddToShortlist = (person) => {
+        if (!shortlist.find(p => p.id === person.id)) {
+          setShortlist([...shortlist, person]);
+        }
+        handleCloseSheet();
+      };
+      
+      const handleNextTour = () => {
+        if (tourStep < tourSteps.length - 1) {
+          setTourStep(tourStep + 1);
+        }
+      };
+      
+      const handlePrevTour = () => {
+        if (tourStep > 0) {
+          setTourStep(tourStep - 1);
+        }
+      };
+      
+      const handleCloseTour = () => {
+        setIsTourOpen(false);
+      };
+      
+      useEffect(() => {
+        // Switch view based on tour step
+        if (tourStep === 2) setView('grid');
+        if (tourStep === 3) setView('network');
+      }, [tourStep]);
+      
+      return (
+        <div className="app-shell">
+          <header className="app-header">
+            <div className="logo">
+              <div className="logo-icon">◈</div>
+              <div className="logo-text">Caryatid<span>2</span></div>
+            </div>
+            
+            <div className="view-tabs">
+              <button 
+                className={`view-tab ${view === 'roster' ? 'active' : ''}`}
+                onClick={() => setView('roster')}
+              >
+                Roster
+              </button>
+              <button 
+                className={`view-tab ${view === 'grid' ? 'active' : ''}`}
+                onClick={() => setView('grid')}
+              >
+                Org Grid
+              </button>
+              <button 
+                className={`view-tab ${view === 'network' ? 'active' : ''}`}
+                onClick={() => setView('network')}
+              >
+                Talent Network
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              {shortlist.length > 0 && (
+                <span className="shortlist-count">{shortlist.length} shortlisted</span>
+              )}
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setIsTourOpen(true)}
+              >
+                Tour
+              </button>
+            </div>
+          </header>
+          
+          <main className="main-content">
+            <div className="view-panel">
+              {view === 'roster' && (
+                <RosterView data={mockPeople} onSelectPerson={handleSelectPerson} />
+              )}
+              {view === 'grid' && (
+                <OrgGridView data={mockPeople} onSelectPerson={handleSelectPerson} />
+              )}
+              {view === 'network' && (
+                <TalentNetworkView 
+                  data={mockPeople} 
+                  connections={mockConnections}
+                  onSelectPerson={handleSelectPerson}
+                />
+              )}
+            </div>
+          </main>
+          
+          <BottomSheet
+            person={selectedPerson}
+            isOpen={isSheetOpen}
+            onClose={handleCloseSheet}
+            onAddToShortlist={handleAddToShortlist}
+          />
+          
+          <TourOverlay
+            isOpen={isTourOpen}
+            currentStep={tourStep}
+            onNext={handleNextTour}
+            onPrev={handlePrevTour}
+            onClose={handleCloseTour}
+          />
+        </div>
+      );
+    };
+    
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
