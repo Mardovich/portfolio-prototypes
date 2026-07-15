@@ -10,14 +10,14 @@ Served from GitHub Pages (`/docs`). Each links to its full case study.
 
 | Prototype | Live demo | Case study | Focus |
 |---|---|---|---|
-| Volatility Surface | [demo](https://mardovich.github.io/portfolio-prototypes/volatility-surface/) | [case study](https://siarheimardovich.com/volatility-surface/) | Options trading, value-at-risk, decision geometry |
-| Incline Trust | [demo](https://mardovich.github.io/portfolio-prototypes/incline-trust/) | [case study](https://siarheimardovich.com/incline-trust/) | AI exception review, reg-tech, audit trail |
-| Uncertainty as Signal | [demo](https://mardovich.github.io/portfolio-prototypes/uncertainty-as-signal/) | [case study](https://siarheimardovich.com/uncertainty-as-signal/) | Climate risk, live-data prototyping |
-| Know Who Knows | [demo](https://mardovich.github.io/portfolio-prototypes/talent-caryatid/) | [case study](https://siarheimardovich.com/talent-caryatid/) | Talent graph navigation |
-| What Gets Measured | [demo](https://mardovich.github.io/portfolio-prototypes/clinical-benchmark/) | [case study](https://siarheimardovich.com/clinical-benchmark/) | Clinical exception detection |
-| HR as DJ (Staffing Radar) | [demo](https://mardovich.github.io/portfolio-prototypes/staffing-radar/) | [case study](https://siarheimardovich.com/hr-dj/) | Workforce allocation model |
-| North Bridge | [demo](https://mardovich.github.io/portfolio-prototypes/north-bridge/) | [case study](https://siarheimardovich.com/north-bridge/) | Private-capital coverage workflow |
-| Decision Logic Before Build | [demo](https://mardovich.github.io/portfolio-prototypes/signalcare-cdx/) | [case study](https://siarheimardovich.com/decision-logic-before-build/) | Cross-platform clinical verification |
+| Volatility Surface | [demo](https://mardovich.github.io/portfolio-prototypes/volatility-surface/) | [case study](https://siarheimardovich.com/volatility-surface-2026/) | Options trading, value-at-risk, decision geometry |
+| Incline Trust | [demo](https://mardovich.github.io/portfolio-prototypes/incline-trust/) | [case study](https://siarheimardovich.com/incline-trust-2026/) | AI exception review, reg-tech, audit trail |
+| Uncertainty as Signal | [demo](https://mardovich.github.io/portfolio-prototypes/uncertainty-as-signal/) | [case study](https://siarheimardovich.com/uncertainty-as-signal-2026/) | Climate risk, live-data prototyping |
+| Know Who Knows | [demo](https://mardovich.github.io/portfolio-prototypes/talent-caryatid/) | [case study](https://siarheimardovich.com/talent-caryatid-2026/) | Talent graph navigation |
+| What Gets Measured | [demo](https://mardovich.github.io/portfolio-prototypes/clinical-benchmark/) | [case study](https://siarheimardovich.com/clinical-benchmark-2026/) | Clinical exception detection |
+| HR as DJ (Staffing Radar) | [demo](https://mardovich.github.io/portfolio-prototypes/staffing-radar/) | [case study](https://siarheimardovich.com/hr-dj-2026/) | Workforce allocation model |
+| North Bridge | [demo](https://mardovich.github.io/portfolio-prototypes/north-bridge/) | [case study](https://siarheimardovich.com/north-bridge-2026/) | Private-capital coverage workflow |
+| Decision Logic Before Build | [demo](https://mardovich.github.io/portfolio-prototypes/signalcare-cdx/) | [case study](https://siarheimardovich.com/decision-logic-before-build-2026/) | Cross-platform clinical verification |
 
 ## Stack
 
